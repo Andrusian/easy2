@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# ignore sound files
+*.wav
+*.mp3
+
+
