@@ -1,0 +1,60 @@
+HI! Thanks for downloading Easy2.
+
+What is Easy 2? Easy 2 is a simplied audio generation utility designed for
+the creation of sound effects, test signals, and stim files. It is not designed
+to be a music audio synthesizer.
+
+An Easy2 guide will be included in the distribution.
+
+Syntax has been designed to be as simple as possible with backup defaults.
+
+For example, the simplest file is:
+
+output "firstsound.wav"
+sound 10
+
+To run this script (Linux):
+
+./easy2 simplest.e2
+
+and this will make a 1000Hz sine wave sound, 10 seconds long, with a short fadein. This file will be in standard 16-bit .wav file format.
+
+Easy2 has a group of time-based audio modifiers, known as "Number Drivers". These
+can be used to vary parameters such as volume, frequency, and phase. Examples are:
+
+- osc (oscillator) with various waveforms
+- ramp (linear change)
+- ramps (multiple linear changes)
+- seq (sequence)
+
+Easy2 also offers some modifiers that can be used on the created output audio before
+it is written out to the file.
+
+Easy2 can do very basic math, repeats, and loops. It can precisely move
+forward/back in time to build up complex audio.
+
+Easy2 can work on right/left channels independently or together. It can use a
+balance command to dynamically control the audio across the two channels.
+
+How does the code work?
+
+Look at easy_code.cpp as a starting point.
+It uses Lex [but not Yacc]. If you aren't familiar with Lex, it's a tool that does
+the work of developing parsers.
+Most of the code is C++, written mostly in a C-like style.
+
+How to build on Linux:
+
+Easy 2 was developed on Linux (Ubuntu).
+Easy 2 depends on some version of Lex/Flex. This may be installed by default.
+Everything else is just generic C/C++.
+Put files in a directory and just use 'make'.
+
+How to build on Windows:
+
+You need Visual Studio C++ installed.
+You'll also need Flex:
+http://gnuwin32.sourceforge.net/packages/flex.htm
+
+
+
