@@ -1,4 +1,4 @@
-#include "easy_code.h"
+#include "easy_code.hpp"
 
 const char * debug_type (int dtype) {
 
@@ -22,7 +22,7 @@ const char * debug_type (int dtype) {
     case MULT:
       return " * ";
     case DIV:
-      return " \ ";
+      return " \\ ";
     case MODULUS:
       return " %% ";
     case STRING:

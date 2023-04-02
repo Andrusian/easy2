@@ -1,4 +1,11 @@
-#include <stdio.h>
+#ifdef _WIN32
+#define M_PI 3.1415926535
+#define fileno(x) _fileno(x)  
+
+#endif
+
+
+#include <cstdio>
 
 
 #ifndef EASY_CODE
@@ -25,7 +32,7 @@ void numbers (char * str);
 void number (char * str);
 void sound (double length);
 void finish(void);
-const char * doFilename (char *);
+const char * doFilename (const char *);
 void doComma(void);
 void doNegative(void);
 

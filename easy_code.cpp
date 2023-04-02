@@ -83,21 +83,16 @@
 //                                                                      
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+#include "easy_code.hpp"
+extern void restart(void);   // over in lex.yy.c
 
-extern "C" {
-  // C called from C++ must be in this block for dumb legacy reasons
-  
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "easy_code.h"
-#include "math.h"
-  extern void restart(void);   // over in lex.yy.c
-}
-
+#include <ctime>
 #include <iostream>
 #include <map>
-#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
 #include <algorithm>
 #include <string>
 #include <stack>
@@ -105,6 +100,9 @@ extern "C" {
 #include "easy.hpp"
 #include "easy_wav.hpp"
 #include "easy_node.hpp"
+
+extern int flag48;
+FILE * copyyyin;
 
 using namespace std;
 
@@ -126,19 +124,18 @@ void lookForRepeat(void);
 bool loadSeq(node * n, Seq * , Ramps *);
 node * GetLeft (node * center);
 node * GetRight (node * center);
-extern const char * debug_type (int dtype);
+const char * debug_type (int dtype);
 
 // these are over in easy_sound...
 
-extern void doSound(double, bool);
-extern void doMix(double);
-extern void doSilence(double);
-extern void doBoost(double, NumberDriver *);
-extern void doReverb (double length, NumberDriver *amt, NumberDriver *del);
+void doSound(double, bool);
+void doMix(double);
+void doSilence(double);
+void doBoost(double, NumberDriver *);
+void doReverb (double length, NumberDriver *amt, NumberDriver *del);
 
 // GLOBALS...
 
-FILE * copyyyin;
 int lineNumber=0;
 char * outputFile=NULL;
 node * copyNodes (node * n);
@@ -156,7 +153,6 @@ RandSeq *unusedRand=NULL;
 
 stack<double> rewindHistory;            // remembers previous times of sounds
 bool updateDefaults=true;               // flag for updating default settings
-extern bool flag48;
 
 
 //------------------------------------------
@@ -176,9 +172,9 @@ struct settings_struct_stacked settings;
   
 float tt=0;                      // current time
 
-extern struct node *elist;
-extern struct node *begn;
-extern struct node *current;
+extern node *elist;
+extern node *begn;
+extern node *current;
 
 //===========================================================================
 // We provide some auto conversion from different units.
@@ -388,7 +384,7 @@ void Shape::loadTable(void) {
     
     step=0;
 
-    printf("initial shape (step %d): %f -> %f   %d -> %d\n",step,vb,va,tb,ta);
+    // printf("initial shape (step %ld): %f -> %f   %d -> %d\n",step,vb,va,tb,ta);
 }
 
 //----------------------------------------------------------------------
@@ -632,7 +628,7 @@ void init (void) {
   defaults.freq=new Value(1000.);
   defaults.freq2=new Value(2000.);
   defaults.freq3=new Value(3000.);
-  defaults.vol=new Value(0.71);       
+  defaults.vol=new Value(0.70);       
   defaults.vol2=new Value(0);         // harmonics off by default
   defaults.vol3=new Value(0);
 
@@ -864,7 +860,7 @@ char * StringRight (node * n) {
 //
 // This will not skip over NOOP, TO, or COMMA
 
-char * FilenameRight (node * n) {
+const char * FilenameRight (node * n) {
   node * right;
   
   // first, check to make sure this is not the end of the line
@@ -883,11 +879,11 @@ char * FilenameRight (node * n) {
 
 // makes copy of filename without quotes
 
-const char * doFilename (char * str) {
+const char * doFilename (const char * str) {
   char * newStr=(char *) malloc(strlen(str)+1);
 
   char *spot=newStr;
-  for (int i=0;i<strlen(str);i++) {
+  for (int i=0;i<(int) strlen(str);i++) {
     if (str[i]!='"') {  // don't copy double quotes
       *spot=str[i];
       spot++;
@@ -1089,15 +1085,14 @@ void processCommands (void) {
 
 void lookForRepeat() {
   bool repeatFound=false;
-  node * cur;
   //start from the begn
   struct node *ptr = begn;
 	
   // navigate from the start
 	
    while(ptr != NULL) {    
-     if (cur->dtype==REPEAT) {               // repeat!
-       int repeats=int(NumberRight(cur));
+     if (ptr->dtype==REPEAT) {               // repeat!
+       int repeats=int(NumberRight(ptr));
         if (repeats==NO_NUMBER) {
           repeats=1;
         }
@@ -1108,8 +1103,8 @@ void lookForRepeat() {
           // get rid of that repeat node and the one after otherwise we get
           // too many repeats
 
-          cur->rght->dtype=NOOP;
-          cur->dtype=NOOP;
+          ptr->rght->dtype=NOOP;
+          ptr->dtype=NOOP;
 
           // now, do the repeats
           // note that numbers don't get recalculated
@@ -1199,7 +1194,7 @@ bool loadSeq(node * n, Seq * seq, Ramps *rmp) {
   double v1=0;
   double d1;
   bool found=false;
-  long count;
+  long count=0;
   node * orig=n;
   vector<double> seqValues;
   vector<uint32_t> seqTimes;
@@ -1608,7 +1603,7 @@ void doStuff(void) {
         steps=1;
       }
 
-      printf("cmd debug: rewind %d %d %f\n",steps,rewindHistory.size(),masterTime);
+      // printf("cmd debug: rewind %d %d %f\n",steps,rewindHistory.size(),masterTime);
 
       if ((rewindHistory.size()-1)<1) {
         syntaxError(NULL,"can't rewind before 0 time\n");
@@ -1747,7 +1742,7 @@ void doStuff(void) {
         }
       }
 
-      printf("RAMP: start %f target %f len %d\n",startV,endV,rampLen);
+      printf("RAMP: start %f target %f len %ld\n",startV,endV,rampLen);
       
       Ramp *unusedRamp=new Ramp(startV, endV, rampLen); // temporary
       cur->nd=unusedRamp;     // store this with the node
@@ -2027,7 +2022,7 @@ void doStuff(void) {
     else if (cur->dtype==OUTPUT) {                   // special: takes filename
       // printf("cmd: output\n");
 
-      outputFile=FilenameRight(cur);
+      outputFile=(char *) FilenameRight(cur);
       if (outputFile==NULL) {
         syntaxError(cur,"Output filename is not specified\n");
       }

@@ -1,17 +1,14 @@
 
-extern "C" {
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "easy_code.h"
-}
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 
 #include "easy.hpp"
 #include "easy_node.hpp"
 
-struct node *elist=NULL;
-struct node *begn=NULL;
-struct node *current=NULL;
+node *elist=NULL;
+node *begn=NULL;
+node *current=NULL;
 
 extern const char * debug_type (int dtype);
 fpos_t myftell (FILE *fp);
@@ -67,7 +64,7 @@ int isEmpty() {
 
 int listLength() {
   int length=0;
-  struct node *current;
+  node *current;
 
   for (current=elist;current!=NULL;current=current->lft) {
 
@@ -98,7 +95,7 @@ void emptyList() {
 
 //------------------------
 
-int isCommand(struct node * n) {
+int isCommand(node * n) {
   if ((n->dtype>1)&&(n->dtype>100)) {
     return 1;
   }
@@ -107,9 +104,9 @@ int isCommand(struct node * n) {
 
 //------------------------
 
-int countArgs(struct node * n) {
+int countArgs(node * n) {
   int count=0;
-  struct node *ptr;
+  node *ptr=n;
 
   while ((ptr!=NULL)&&(!isCommand(ptr))) {
     count++;
@@ -131,14 +128,14 @@ void displayBackward() {
 
    //start from the beginning
   
-   struct node *ptr = elist;
+   node *ptr = elist;
 	
    //navigate till the end of the list
 	
    int i=0;
    while(ptr != NULL) {
      i++;
-     printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
+     // printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
      ptr = ptr->lft;
    }
 	
@@ -150,7 +147,7 @@ void displayForward() {
    printf("COMMANDS FORWARD:\n");
 
    //start from the begn
-   struct node *ptr = begn;
+   node *ptr = begn;
 	
    //navigate till the start of the list
 	
@@ -159,7 +156,7 @@ void displayForward() {
      i++;
 	
      //print data
-     printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
+     // printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
 		
      //move to lft item
      ptr = ptr ->rght;
@@ -220,7 +217,7 @@ void push(int dtype, float value, char * str) {
   // printf("push debug: %d %f\n",dtype,value);
 
    //create a link
-   struct node *link = (struct node*) malloc(sizeof(struct node));
+   node *link = (node*) malloc(sizeof(node));
    link->dtype = dtype;
    link->value = value;
    link->str = str;
@@ -269,10 +266,10 @@ void push(int dtype, float value, char * str) {
 // }
 
 //delete first item
-struct node* pop() {
+node* pop() {
 
    //save reference to first link
-   struct node *tempLink = elist;
+   node *tempLink = elist;
 	
    //if only one link
    if(elist->lft == NULL){
@@ -288,9 +285,9 @@ struct node* pop() {
 
 //delete link at the begn location
 
-struct node* unshift() {
+node* unshift() {
    //save reference to begn link
-   struct node *tempLink = begn;
+   node *tempLink = begn;
 	
    //if only one link
    if(elist->lft == NULL) {

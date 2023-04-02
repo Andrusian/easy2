@@ -1,5 +1,7 @@
+%option noyywrap
+
 %{
-#include "easy_code.h"
+#include "easy_code.hpp"
 
 /* recognize the keywords */
 %}
@@ -122,7 +124,7 @@ loop                 {push(LOOP,0,NULL); }
 
 [=]                  {push(ASSIGNMENT,0,NULL); }
 
-\"[a-zA-Z0-9]+"."[a-zA-Z0-9]+\" {push(FILENAME,0,doFilename(yytext)); }
+\"[a-zA-Z0-9_\+\-]+"."[a-zA-Z0-9_]+\" {push(FILENAME,0,(char*)doFilename(yytext)); }
 
 [a-zA-Z][a-zA-Z0-9]* {push(STRING,0,strdup(yytext)); }  // note: must start with a letter
 
@@ -150,6 +152,8 @@ int flag48=0;
 int main(int argc, char * argv[]) {
   FILE *infile=NULL;
   int i;
+
+  printf("EASY2: audio generator\n");
 
   if (argc>1) {
     for (i=1;i<argc;i++) {
