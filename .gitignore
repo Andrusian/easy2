@@ -35,4 +35,6 @@
 *.wav
 *.mp3
 
-
+# ignore lex output
+*.yy.c
+*.yy.cpp
