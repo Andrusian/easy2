@@ -1,0 +1,6 @@
+output "phasor2.wav"
+fadeout 1
+sound 120 left freq 800 phase osc .4 to 0 freq 2p
+rewind
+sound 120 right freq 800
+

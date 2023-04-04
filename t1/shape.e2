@@ -1,0 +1,12 @@
+output "shape.wav"
+freq 240
+vol 1.
+fadein 0s
+sound 10 notch3 1
+sound 10 notch2 1
+sound 10 notch1 1
+silence 5
+sound 1 freq 400 vol .99
+sound 10 rev3            
+sound 1 freq 400 vol .99
+sound 10 vol .4 rev3     

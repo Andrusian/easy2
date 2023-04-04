@@ -22,8 +22,8 @@ class node {
   bool filled;               // was float value of variable filled?
   NumberDriver *nd;
 
-  struct node *lft;          // node to left
-  struct node *rght;         // node to right
+  node *lft;          // node to left
+  node *rght;         // node to right
 };
 
 // some forward declarations are over in easy_code.h
@@ -35,11 +35,11 @@ int isEmpty();
 int listLength();
 void replaceNode(node *n, int type, float v, char * s);
 void emptyList();
-int isCommand(struct node * n);
-int countArgs(struct node * n);
+int isCommand(node * n);
+int countArgs(node * n);
 void insertNodes(node *to, node*from);
-struct node* pop();
-struct node* unshift();
+node* pop();
+node* unshift();
 void deleteNode(node * n);
 void zeroNode(node * n);
 void displayNode(node *ptr);

@@ -1,0 +1,12 @@
+# tests the re-write of math operations
+# also tests assignment in re-assignment
+
+output "math.wav"
+a=123+456
+b=12+34*56
+c=a+b+1
+freq c
+sound 5
+c=1000+a
+freq c
+sound 5

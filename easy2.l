@@ -1,3 +1,4 @@
+
 %{
 #include "easy_code.h"
 
@@ -122,7 +123,7 @@ loop                 {push(LOOP,0,NULL); }
 
 [=]                  {push(ASSIGNMENT,0,NULL); }
 
-\"[a-zA-Z0-9]+"."[a-zA-Z0-9]+\" {push(FILENAME,0,doFilename(yytext)); }
+\"[a-zA-Z0-9_\+\-]+"."[a-zA-Z0-9_]+\" {push(FILENAME,0,doFilename(yytext)); }
 
 [a-zA-Z][a-zA-Z0-9]* {push(STRING,0,strdup(yytext)); }  // note: must start with a letter
 
@@ -150,6 +151,8 @@ int flag48=0;
 int main(int argc, char * argv[]) {
   FILE *infile=NULL;
   int i;
+
+  printf("EASY2: audio generator\n");
 
   if (argc>1) {
     for (i=1;i<argc;i++) {
@@ -197,3 +200,12 @@ int main(int argc, char * argv[]) {
 void restart (void) {
   yy_flush_buffer(YY_CURRENT_BUFFER);
 } 
+
+int yywrap() {
+   // open next reference or source file and start scanning
+   // if((yyin = compiler->getNextFile()) != NULL) {
+   //    line = 0; // reset line counter for next source file
+   //    return 0;
+   //}
+   return 1;
+}

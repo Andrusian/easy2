@@ -1,0 +1,36 @@
+# tests the effects of harmonics on sound
+output "harm.wav"
+
+vol .5
+
+# plain first
+sound 1
+
+freq 1000
+freq2 1200   # minor third up
+freq3 857    # minor third down
+
+#test default on harmonic 2
+vol2 ramp .1 to .3
+sound 10
+
+# test both overtones
+vol3 ramp 0 to .3
+vol2 ramp .1 to .3
+sound 10
+
+# change freq
+vol2 ramp .001 to .2
+vol3 ramp .001 to .1
+sound 10
+
+# test both plus freq changes
+vol3 ramp .1 to .25
+vol2 ramp .1 to .25
+freq2 osc 1200 to 1220 freq 1
+freq3 osc 2400 to 2440 freq 1.5
+sound 10
+
+
+
+

@@ -290,7 +290,7 @@ public:
 class Seq: public NumberDriver {    // sequencer
 public:
   double value;
-  int step=0;
+  long step=0;
   std::vector<double> entV;
   std::vector<uint32_t> entT;
   double curval;
@@ -321,7 +321,7 @@ public:
       countX=0;
       step++;
       // printf("seq entries: %d\n",entV.size());
-      if (step<=entV.size()) {   // is there another value?
+      if (step<=(long) entV.size()) {   // is there another value?
         
         if (curtime==0) {          // loop around if last time is zero
           // loop when a zero time value seen
@@ -358,7 +358,7 @@ public:
 
 class Ramps: public NumberDriver {    // ramps
 public:
-  int step=0;
+  long step=0;
   std::vector<double> entV;
   std::vector<uint32_t> entT;
   uint32_t tarTimeX;
@@ -395,7 +395,7 @@ public:
         
     if (countX>=tarTimeX) {          // time for next value??
       step++;
-      if (step==entV.size()) {      // are we beyond end of list?
+      if (step==(long) entV.size()) {      // are we beyond end of list?
         // always loop
         
         step=0;
@@ -522,8 +522,8 @@ class Shape: public NumberDriver {    // sequencer
 public:
   int preset;
   long length=-1;
-  int step=0;
-  int steps;
+  long step=0;
+  long steps;
   std::vector<double> entV;
   std::vector<double> entT;
   std::vector<double> entTX;
@@ -599,7 +599,7 @@ public:
       step++;
       stepX=0;   // reset counter
 
-      if (step<entTX.size()) {
+      if (step<(long) entTX.size()) {
 
         // simply go to next step
         

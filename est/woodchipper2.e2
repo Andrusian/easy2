@@ -1,0 +1,44 @@
+# a stereo signal that uses some sharper tones.
+#
+# The right has a rhythmic vibration. It's the woodchipper.
+# The left has a periodic saw. It's the chainsaw.
+
+output "woodchipper2.wav"
+
+BASE=800
+OVER1=960
+OVER2=1152
+form saw
+BASE2=664
+OVER3=555
+# left
+freq BASE
+freq2 OVER1
+freq3 OVER2
+vol 60%
+vol2 10%
+vol3 10%
+
+left
+count=60
+form saw
+vol .75-count*.002
+sound 2 shape pulse2 fadein 0
+loop count
+
+# do right channel...
+time 0
+
+right
+
+freq2 OVER3
+vol 60%
+vol2 20%
+vol3 0
+fadein 2
+
+form square
+sound 120 freq BASE2 vol osc 30% to 60% freq 5 square
+# do a ramp on the right channel volume
+time 0
+boost 120 vol ramp .8 to 1

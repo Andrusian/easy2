@@ -39,7 +39,7 @@ extern "C" {
 
 extern settings_struct_stacked settings;
 extern WaveWriter * wavout;
-extern const long defaultFormat;
+extern long defaultFormat;
 extern const char * defaultFileout;
 
 extern uint32_t SR;
@@ -193,7 +193,7 @@ double calcFadein (double x) {
 // discontinuities or finish off the end of
 // a signal in a more natural way.
 
-double calcFadeout (ulong x, ulong startX, ulong endX) {
+double calcFadeout (uint32_t x, uint32_t startX, uint32_t endX) {
   static long fadeout_starts=1;
   static long spanFade=1;
   
@@ -416,13 +416,29 @@ void doSound (double length, bool scratch) {
   // we'll try and reuse it for various
   // types of waveforms.
   
-  uint32_t countX=0;
+  uint32_t countX=0;   
+  uint32_t countXadj=0;  // adjusted for phase
 
   for (uint32_t x=0;x<deltaX;x++) {
     countX++;
     double sawval;
+
+    // current phase percent and frames...
+    // e.g. -.3*44100/1000 = -13 frames ... range would be -22 to +22
+    //
+    // easyV1 had some hellish code to do phasors at various speeds
+    // and to limit adjustment speed. We're relying on phasors being
+    // driven by oscillators to hopefully make this unnecessary.
     
-    if (countX>periodX) countX=0;
+    double phase=phaseFD->getValue(x);
+    int32_t phaseX=phase*SR/freq;
+
+    countXadj=countX+phaseX;  // adjust our counter for phase
+      
+    if (countXadj>periodX) {
+      countXadj=0;
+      countX=-phaseX;
+    }
 
     // update settings driven by NumberDrivers and other settings
 
@@ -460,27 +476,10 @@ void doSound (double length, bool scratch) {
     if (balL>1) balL=1.;
     if (balR>1) balR=1.;
     
-    // printf("bal: %f balL: %f balR: %f\n", bal, balL, balR);
-
-    // printf ("shape debug: %d shape %f vol %f fadein %f fadeout %f = volnet %f\n",x,shapevol,vol,fadein, fadeout,volnet);
-
-    // assert(volnet<=1.0);  // TO DO : temporary - comment these out
-    // assert(volnet>0);
-
     // update duty...
 
     dutyThresh=settings.duty->getValue(x);
     
-    // current phase percent and frames...
-    // e.g. -.3*44100/1000 = -13 frames ... range would be -22 to +22
-    //
-    // easyV1 had some hellish code to do phasors at various speeds
-    // and to limit adjustment speed. We're relying on phasors being
-    // driven by oscillators to hopefully make this unnecessary.
-    
-    double phase=phaseFD->getValue(x);
-    int32_t phaseX=phase*SR/freq;
-
     // printf("phase: %d %f %d\n",x,phase,phaseX);
     
     // generate current value: note use of potentially
@@ -500,10 +499,10 @@ void doSound (double length, bool scratch) {
     //
     
     if (form==WF_SQUARE) {               // SQUARE
-      if (countX>dutyX) {  
+      if ((countXadj)>dutyX) {  
         sineval=0;
       }
-      else if (countX>(dutyX/2)) {  
+      else if ((countXadj)>(dutyX/2)) {  
         sineval=1;
       }
       else {
@@ -516,22 +515,22 @@ void doSound (double length, bool scratch) {
       // note: duty cycle gets strange on tri above values
       // around 66%, but I'll leave it be
       
-      if (countX==0)  {
+      if (countXadj==0)  {
         tridirection=1;
       }  
-      else if (countX==dutyX/4)  {
+      else if ((countXadj)==dutyX/4)  {
         tridirection=-1;
         sawval=1.0;
       }
-      else if (countX==dutyX*3/4)  {
+      else if ((countXadj)==dutyX*3/4)  {
         tridirection=1;
         sawval=-1.0;
       }
-      else if (countX==dutyX) {
+      else if ((countXadj)==dutyX) {
         sawval=0.0;
         tridirection=1;
       }
-      else if (countX>dutyX) {
+      else if ((countXadj)>dutyX) {
         sawval=0.0;
         tridirection=0;
       }
@@ -551,10 +550,10 @@ void doSound (double length, bool scratch) {
       // note: duty cycle gets strange on saw above values
       // around 80%, but I'll leave it be
       
-      if (countX>dutyX)  {
+      if ((countXadj)>dutyX)  {
         sawval=0;
       }
-      else if (countX==dutyX/2)  {
+      else if ((countXadj)==dutyX/2)  {
         sawval=-1.0;
       }  
       else {  
@@ -590,10 +589,10 @@ void doSound (double length, bool scratch) {
 
       tensX=int(.2*volnet*vol*SR/freq);   
 
-      if (countX<tensX) {
+      if (countXadj<tensX) {
         sineval=.95;
       }
-      else if (countX<(tensX*2)) {
+      else if (countXadj<(tensX*2)) {
         sineval=-.95;    // needs both polarities
       }
       else {
@@ -674,6 +673,9 @@ void doSound (double length, bool scratch) {
       // Note that the circle class
       // has an internal integration which is cleared at the start
       // of each sound.
+      //
+      // circuit has little effect on sine waveforms until
+      // a critical value his hit.
 
       if (settings.circuit) {
         outval=circuit.effect(x,waveval);

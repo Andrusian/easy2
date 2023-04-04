@@ -1,0 +1,5 @@
+output "duty.wav"
+sound 10 form square duty ramp 1 0
+sound 10 form saw duty ramp 1 0
+sound 10 form tri duty ramp 1 0
+sound 10 form sine duty ramp 1 0

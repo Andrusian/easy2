@@ -1,0 +1,6 @@
+output "osc.wav"
+sound 10 vol osc .3 .5 freq 1
+sound 10 vol ramp .5 .8 .3
+sound 15 freq 190 vol osc .6 .8 freq .5
+rewind
+sound 15 right freq osc 180 200 freq .5

@@ -1,0 +1,7 @@
+output "small.wav"
+freq 240
+vol 1.
+fadein 0s
+silence 10
+sound 10 notch3 1
+sound 1 freq 400 vol .99

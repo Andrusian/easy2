@@ -1,0 +1,46 @@
+# working again with overtones, this puts a smooth
+# signal in the left channel with a vibration in the right channel
+# Once again, this is based on the Yinghua frequencies.
+
+output "overtones_vibration.wav"
+
+BASE=800
+OVER1=BASE*6/5
+OVER2=OVER1*6/5
+OVER3=BASE*5/6
+OVER4=OVER3*5/6*5/6
+
+# do left channel...
+
+freq BASE
+freq2 OVER1
+freq3 OVER2
+vol 60%
+vol2 20%
+vol3 10%
+
+left
+sound 120 
+rewind
+
+# do right channel...
+
+freq BASE
+freq2 OVER3
+freq3 OVER4
+vol 60%
+vol2 20%
+vol3 10%
+
+right
+sound 120
+
+# and do a vibration in the right channel
+rewind
+boost 120 vol osc .2 to 1 square freq 30
+
+# do a vol ramp after...
+
+rewind
+both
+boost 120 vol ramp .8 to 1.

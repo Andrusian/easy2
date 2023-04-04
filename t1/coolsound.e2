@@ -1,0 +1,7 @@
+output "coolsound.wav"
+fadeout 1
+left
+sound 25 freq 200 vol (osc .6 .8 freq .5)
+rewind
+sound 15 right freq (osc 190 210 freq .5)
+

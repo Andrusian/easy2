@@ -1,0 +1,8 @@
+# simple phasor that slows in speed
+
+output "phase_simple_go_slower.wav"
+left
+sound 120 phase osc .40 to -.40 freq ramp 3 to .3 120
+rewind
+right
+sound 120

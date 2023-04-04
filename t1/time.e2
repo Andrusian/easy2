@@ -1,0 +1,6 @@
+output "time.wav"
+skip=silence .5
+sound 30 
+time 1
+repeat 20 silence .2 addtime 1
+repeat 60 silence .1 addtime -1

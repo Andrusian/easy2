@@ -1,0 +1,21 @@
+# This script tests the solution to the multiple oscillator problem.
+# As originally written there were problems with using
+# more than one oscillator at a time for different parameters. This
+# problem also occurs if the oscillators are used in secondary situations.
+#
+# The solution is to make a stack with each of the potentially
+# overlapping parameters. These are: freq, form, and phase.
+#
+output "superfreq.wav"
+freq 2000                  # should be ignored
+fadein 0
+
+left
+
+# there is the sound frequency here plus 3 oscillators: driving freq, phase, and vol
+# phase and freq overlap
+
+sound 30   freq osc 600 to 699 freq 10p  phase osc -.5 to .5 freq 1   vol osc .5 to .7 form tri freq 2 phase .5
+rewind
+right
+sound 30 freq osc 600 to 699

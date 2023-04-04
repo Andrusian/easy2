@@ -1,0 +1,38 @@
+# extended triphase-style signal based on phase
+# uses the circuit setting to make signal messy
+#
+# this file tries out the new SQUARE wave phase
+# uses sine. It is difficult to drive sine into
+# distortion with circuit so these settings are
+#"right on the edge"
+#
+# what is odd is that the overtone effect only
+# appears periodically on waveforms: probably the ones
+# where phase shifts are done.
+#
+# turns out the slight messiness in this signal makes the phase
+# shifts more powerful
+
+output "messy_phase_square.wav"
+
+freq 1024
+
+circuit
+cirp .7
+ciri .3
+
+left
+sound 60 square freq 1000 vol ramp .5 to .6 phase osc .4 to -.3 freq 1.2 fadein 3
+sound 30 square freq 1100 vol ramp .5 to .6 phase osc .2 to -.4 freq 1.5p fadein .1
+sound 60 square freq 1200 vol ramp .5 to .6 phase osc .4 to -.1 freq 1.6 fadein .1
+
+time 0
+
+# mirror it in the right with no phase shifts
+# without the phase shifts, circuit doesn't do much
+
+right
+sound 60 square freq 1000 vol ramp .5 to .6 fadein 3
+sound 30 square freq 1100 vol ramp .5 to .6
+sound 60 square freq 1200 vol ramp .5 to .6 
+

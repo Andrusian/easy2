@@ -1,7 +1,7 @@
 TARGET=easy2
-CFLAGS=-O0 -g3 -ggdb -w
-CPPFLAGS=-O0 -g3 -ggdb -w
-CLIBS=-ll
+CFLAGS=-O0 -g3 -ggdb -Wall
+CPPFLAGS=-O0 -g3 -ggdb -Wall
+CLIBS=
 HEADERS=easy_wav.hpp easy_code.h easy.hpp easy_node.hpp
 
 easy2: easy_debug.o easy_sound.o easy_wav.o easy_node.o lex.yy.o easy_code.o 

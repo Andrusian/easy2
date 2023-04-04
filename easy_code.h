@@ -1,5 +1,11 @@
-#include <stdio.h>
+#ifdef _WIN32
+#define M_PI 3.1415926535
+#define fileno(x) _fileno(x)  
 
+#endif
+
+
+#include <stdio.h>
 
 #ifndef EASY_CODE
 #define EASY_CODE 1

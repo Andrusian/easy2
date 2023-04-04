@@ -1,0 +1,18 @@
+output "sidetoside.wav"
+freq 800
+fadein 1
+fadeout 1
+left
+phase osc -.4 to .4 form sine freq 1
+sound 60 vol osc .4 to .7 form sine freq 1
+phase 0
+rewind
+right
+sound 60 vol osc .4 to .7 form sine freq 1 phase .4
+rewind
+both
+boost 60 vol osc .8 1.2 form sine freq 15
+rewind
+boost 60 vol ramp 1.0 1.15
+rewind
+

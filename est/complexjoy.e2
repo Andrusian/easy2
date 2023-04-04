@@ -1,0 +1,105 @@
+# a complex stereo signal that uses shifting volumes and
+# phases in both channels. What I was looking for here
+# was strong pulsing channel in the right with
+# shifting overtones in the left that mimicked the feeling
+# of touch. This wasn't achieved. However, if you dial
+# this down somewhat you might come up with something good.
+#
+# COMMENT: I can't decide if this is interesting ot not
+# but I'll leave it in the collection of examples as it is
+# and example of a bunch of techniques.
+#
+#
+
+fadein 1
+fadeout .1
+
+output "complexjoy.wav"
+
+
+# now do the right channel, 3 minutes also
+# 
+time 0
+right
+form sine
+
+BASE2=600
+OVER3=720
+OVER4=1066
+freq BASE2
+freq2 OVER3
+freq3 OVER4
+vol2 20%
+vol3 10%
+phase 0
+
+fadein 1
+vol osc .5 to .6 freq 2 form square
+sound 20 form sine
+fadein .1
+vol osc .3 to .6 freq 7 form square
+sound 20 form sine
+vol osc .1 to .6 freq 3 form square
+sound 20 form sine
+vol osc .4 to .6 freq 1 form square
+sound 20 form sine
+vol osc .3 to .65 freq 2 form square
+sound 20 form sine
+vol osc .2 to .6 freq 10 form square
+sound 20 form sine
+vol osc .1 to .6 freq 10 form square
+sound 20 form sine
+vol osc .2 to .64 freq 7 form square
+sound 20 form sine
+vol osc .3 to .64 freq 7 form square
+vol2 osc .1 to .2 freq 5 
+sound 20 form sine
+
+time 0
+
+BASE=900
+OVER1=1080
+OVER2=1600
+
+form sine
+
+left
+freq BASE
+freq2 OVER1
+freq3 OVER2
+vol2 10%
+vol3 20%
+
+# exaggerated phase is like a small frequency shift
+# build 3 minutes of audio with slightly different settings
+
+vol osc .4 to .55 freq 2
+phase osc 1 to 0 freq 5p
+sound 30 
+
+fadein .1
+
+vol osc .4 to .55 freq 4
+phase osc 1 to 0 freq 7p
+sound 30 
+
+vol osc .45 to .5 freq 3p
+phase osc 1 to 0 freq 2p
+sound 30 
+
+phase 0
+vol osc .45 to .55 freq 3
+vol2 osc .1 to .2 freq 1.1p
+sound 30 
+
+vol osc .5 to .55 freq 5
+vol2 osc .05 to .2 freq 1.1p
+vol3 osc .05 to .1 freq 1.4p
+sound 30 
+
+vol osc .5 to .55 freq 10
+vol2 osc 0 to .2 freq 2
+vol3 osc .05 to .15 freq 1.4p
+sound 30 
+
+

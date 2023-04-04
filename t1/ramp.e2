@@ -1,0 +1,8 @@
+output "ramp.wav"
+sound 20 vol ramp .5 .8
+sound 20 vol ramp .5 .8 2
+sound 10 freq ramp 120 240 1
+rewind
+sound 15 right freq ramp 171 342 .5
+
+

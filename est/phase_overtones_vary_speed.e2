@@ -1,0 +1,44 @@
+# simple phasor that varies in speed with overtones
+# This tries to replicate the very effective frquencies of glee signal yinghua B0
+# this is based on minor thirds, higher minor thirds are in left, lower in right
+#
+# Note that the overtones don't get the phase shift, only the base tone.
+
+output "phase_overtones_vary_speed.wav"
+
+BASE=800
+OVER1=BASE*6/5
+OVER2=OVER1*6/5
+OVER3=BASE*5/6
+OVER4=OVER3*5/6*5/6
+
+# do left channel...
+
+freq BASE
+freq2 OVER1
+freq3 OVER2
+vol 60%
+vol2 20%
+vol3 10%
+
+left
+sound 120 phase osc .20 to -.20 freq 5p
+rewind
+
+# do right channel...
+
+freq BASE
+freq2 OVER3
+freq3 OVER4
+vol 60%
+vol2 20%
+vol3 10%
+
+right
+sound 120
+
+# do a vol ramp after...
+
+rewind
+both
+boost 120 vol ramp .8 to 1.

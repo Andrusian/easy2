@@ -1,0 +1,47 @@
+#defaults
+
+automix 80%
+output testscript.wav
+a1="freq 800 shape 1,pulse "
+a2="sound left a1 "
+a3="sound right a1 "
+b=2*4+22/2-1
+freq 1000hz
+fadein 1
+fadeout 2
+form sine
+
+# section 1
+
+sound 10
+sound 20 freq 800
+rewind
+mix sound 20 freq 801
+
+# section 2
+
+silence 5
+sound 10 freq 900:700 left
+rewind
+sound 10 freq 700:900 right shape 5,tri
+
+
+# section 3
+
+silence 2
+sound 20 freq 800,1000 left 
+rewind
+sound 20 freq 800,1000 right _
+     vol osc 0,100% freq 2s
+
+# section 4
+
+silence 2
+repeat 10 a2
+rewind
+time +.5
+repeat 10 a3
+
+d=100%%2
+
+

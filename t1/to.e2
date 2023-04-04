@@ -1,0 +1,7 @@
+# testing problems around the introduction of 'to' and ','
+#
+output "to.wav"
+freq ramp 100 to 1000 3
+vol osc 0 to -1 2p
+phase seq .3,1,-.2,3,.4,5,-.3,8,.2,9,0,.1
+sound 50

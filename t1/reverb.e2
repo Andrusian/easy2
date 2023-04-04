@@ -1,0 +1,9 @@
+# reverb is quite interesting
+# in this example, the delay ranges from 100ms to 1s
+# with reverb percent increasing up to 60%
+#
+output "reverb.wav"
+freq 440
+sound 30 form sine vol .6 pulse1 .4 1
+time 2
+reverb 27 ramp .1 1 27 vol ramp .2 .6 1

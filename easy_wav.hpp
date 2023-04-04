@@ -1,7 +1,3 @@
-#pragma warning ( push )
-#pragma warning ( disable : 21 )
-#pragma warning ( pop )
-
 //----------------------------------------------------------------------
 // Audio ouput WAV file format.
 //
@@ -31,7 +27,8 @@
 extern "C" {
 #include "stdint.h"
 #include "math.h"
-}
+};
+
 
 struct WAV_HEADER {
   /* RIFF Chunk Descriptor */
@@ -80,17 +77,17 @@ public:
   int16_t   *scratch16L;
   int16_t   *scratch16R;
   
-  WaveWriter(long size, uint32_t sampleRate);
+  WaveWriter(int32_t size, uint32_t sampleRate);
   ~WaveWriter();
 
-  long findPosition(double targetTime);
-  double findTime(long position);
-  void setValueL(long pos,int32_t value, bool scratch);
-  void setValueR(long pos,int32_t value, bool scratch);
-  int32_t getValueL(long pos, bool scratch);
-  int32_t getValueR(long pos, bool scratch);
+  int32_t findPosition(double targetTime);
+  double findTime(int32_t position);
+  void setValueL(int32_t pos,int32_t value, bool scratch);
+  void setValueR(int32_t pos,int32_t value, bool scratch);
+  int32_t getValueL(int32_t pos, bool scratch);
+  int32_t getValueR(int32_t pos, bool scratch);
   int writeFile (char * filename);
-  void checkSize(long pos);
+  void checkSize(int32_t pos);
 
   void DEBUG (uint32_t startX,uint32_t endX) {
     uint32_t i;

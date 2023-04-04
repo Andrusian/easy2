@@ -1,0 +1,15 @@
+# tests the ramps numberdriver
+#
+# ramps is like SEQ but with linear transitions
+#
+freq 200
+output "ramps.wav"
+fadein 0
+sound 30 vol ramps  .2,.1,  .1,5,  .6,10,   .15,15,    .9,20,    .6,25
+sound 30 vol ramps  .2,.1,  .1,1,  .6,2,   .15,3,    .9,4,    .6,8,   .1,10
+vol .8
+right
+sound 30 freq ramps  400,.1,  800,5,  1200,10,   600,15,    400,20,    800,25
+rewind
+left
+sound 30 freq ramps  400,.1,  800,1,  401,2,   401,3,    801,4,    401,8,   100,10

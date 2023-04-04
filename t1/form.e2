@@ -1,0 +1,12 @@
+output "form.wav"
+vol .8
+sound 2 sine
+silence 0.5
+sound 2 square
+silence 1
+sound 2 tri
+silence 1
+sound 2 saw
+silence 1
+sound 10 tens freq ramp 400 800
+

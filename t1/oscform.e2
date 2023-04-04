@@ -1,0 +1,13 @@
+# tests expanded form functionality in oscillators
+output "oscform.wav"
+freq 400
+fadein 0
+sound 10 vol osc 0 to 1 form square freq 1
+sound 10 vol osc 0 to 1 form saw freq 1
+sound 10 vol osc 0 to 1 form tri freq 1
+left
+sound 10 vol osc 0 to 1 form sine freq 1
+rewind
+right
+sound 10 vol osc 0 to 1 form sine freq 1 phase .4
+

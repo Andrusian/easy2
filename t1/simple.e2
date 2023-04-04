@@ -1,0 +1,9 @@
+output testscript.wav
+automix 80%
+f=10*20+-.30
+freq f
+a=sound 5 freq 800
+a
+a
+
+

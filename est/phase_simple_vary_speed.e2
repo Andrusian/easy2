@@ -1,0 +1,8 @@
+# simple phasor that varies in speed
+
+output "phase_simple_vary_speed.wav"
+left
+sound 120 phase osc .40 to -.40 freq osc 3 to .3 freq 30p
+rewind
+right
+sound 120

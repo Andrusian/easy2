@@ -1,0 +1,25 @@
+# extended triphase-style signal based on vol
+# uses the circuit setting to make signal messy
+#
+
+output "messy_vol_osc_square.wav"
+
+freq 1024
+
+circuit
+cirp .05
+ciri 3.8
+left
+sound 60 square freq 1000 vol osc .3 to .6 freq 1.2 fadein 3
+sound 30 square freq 1100 vol osc .3 to .6 freq 1.5p fadein .1
+sound 60 square freq 1200 vol osc .2 to .65 freq 2 fadein .1
+
+time 0
+
+# Note the phase shifts here apply to the vol oscilator not the primary audio
+
+right
+sound 60 square freq 500 vol osc .3 to .6 phase ramp .1 to .25  freq 1.2 fadein 3
+sound 30 square freq 550 vol osc .3 to .6  phase ramp .15 to .3 freq 1.5p fadein .1
+sound 60 square freq 600 vol osc .1 to .65 phase ramp .25 to .4 freq 2 fadein .1
+

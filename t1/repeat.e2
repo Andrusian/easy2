@@ -1,0 +1,7 @@
+output "repeat.wav"
+ freq 600
+sound 20 right freq 300.5
+rewind
+repeat 10 sound 2 left fadein 1 fadeout 1
+
+

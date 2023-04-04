@@ -1,0 +1,8 @@
+output "loop.wav"
+counter=4
+fadein 0.
+freq 200+counter*20
+vol 50%+counter*4%
+sound .5 pulse1
+loop counter
+sound 1 freq 115 shape pulse1 form tri

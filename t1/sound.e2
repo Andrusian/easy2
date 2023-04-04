@@ -1,0 +1,8 @@
+# writes a simple sound
+# for testing functionality of each sample rate
+output "sound.wav"
+left
+sound 10 freq 200
+rewind
+right
+sound 10 freq 300

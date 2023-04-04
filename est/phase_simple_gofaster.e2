@@ -1,0 +1,8 @@
+# simple phasor that accelerates in speed
+
+output "phase_simple_go_faster.wav"
+left
+sound 120 phase osc .40 to -.40 freq ramp .25 to 2 120
+rewind
+right
+sound 120

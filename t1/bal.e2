@@ -1,0 +1,13 @@
+output "bal.wav"
+fadein .1
+sound 1 bal osc -1 to 1 freq 1
+sound 1 bal 1
+sound 1 bal 0
+sound 1 bal -1
+sound 6 bal ramp 0 to 1 6
+sound 6 bal ramp 0 to -1 6
+sound 1 bal 0
+sound 12 bal osc -1 to 1 freq .25 
+bal 0
+sound 1
+sound 12 vol osc -1 to 1 freq .25 

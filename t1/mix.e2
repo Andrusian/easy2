@@ -1,0 +1,6 @@
+output "mix.wav"
+freqseq=freq seq 50,1,100,1,200,.5,400,1,20,0                # loops
+automix .95
+sound 20 vol .6 both freq 300
+rewind
+mix 20 both vol .8 freq 600

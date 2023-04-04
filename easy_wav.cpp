@@ -29,10 +29,11 @@
 extern "C" {
 #include "stdint.h"
 #include "math.h"
-}
+};
+
 #include "easy_wav.hpp"
 
-WaveWriter::WaveWriter(long size, uint32_t sampleRate) {
+WaveWriter::WaveWriter(int32_t size, uint32_t sampleRate) {
     static_assert(sizeof(wav) == 44, "");
     this->channels=2;
     this->sr=sampleRate;
@@ -93,7 +94,7 @@ int WaveWriter::writeFile (char * filename) {
 
     printf("writing: %6.2fMB memory, %d samples, %d seconds or %f minutes\n",(maxPos*4/1024./1024.),maxPos,maxPos/sr,maxPos/sr/60.);
 
-    for (int i = 0; i < maxPos; ++i) {
+    for (uint32_t i = 0; i < maxPos; ++i) {
       out.write((const char *) &(data16L[i]), 2);
       out.write((const char *) &(data16R[i]), 2);
     }
@@ -104,25 +105,25 @@ int WaveWriter::writeFile (char * filename) {
 //----------------------------------------------------------------------
 // convert a time to a a position index the output
   
-long WaveWriter::findPosition(double targetTime) {
-    long position=floor(targetTime*sr);
+int32_t WaveWriter::findPosition(double targetTime) {
+    int32_t position=floor(targetTime*sr);
     return position;
   }
 
 //----------------------------------------------------------------------
 // convert a position to a time
   
-double WaveWriter::findTime(long position) {
+double WaveWriter::findTime(int32_t position) {
     return floor(position/sr);
 }
 
 //----------------------------------------------------------------------
 // if we run out of buffer, double the size
 
-void WaveWriter::checkSize(long pos) {
+void WaveWriter::checkSize(int32_t pos) {
   if (pos>size) {
     size=size*2;
-    printf("WAVWRITER: reallocating buffer to %d samples\n",size);
+    printf("WAVWRITER: reallocating buffer to %ld samples\n",size);
     data16L=(int16_t *)realloc ((void *) data16L,size*sizeof(int16_t));
     data16R=(int16_t *)realloc ((void *) data16R,size*sizeof(int16_t));
     scratch16L=(int16_t *)realloc ((void *) scratch16L,size*sizeof(int16_t));
@@ -138,7 +139,7 @@ void WaveWriter::checkSize(long pos) {
 
 //----------------------------------------------------------------------
 
-void WaveWriter::setValueL(long pos,int32_t value, bool scratch) {
+void WaveWriter::setValueL(int32_t pos,int32_t value, bool scratch) {
   checkSize(pos);
   
   if (scratch) {
@@ -158,7 +159,7 @@ void WaveWriter::setValueL(long pos,int32_t value, bool scratch) {
   }
 }
   
-void WaveWriter::setValueR(long pos,int32_t value,bool scratch) {
+void WaveWriter::setValueR(int32_t pos,int32_t value,bool scratch) {
   if (scratch) {
     scratch16R[pos]=value;
     if (pos>scratchPos) {
@@ -175,7 +176,7 @@ void WaveWriter::setValueR(long pos,int32_t value,bool scratch) {
 
 //----------------------------------------------------------------------
 
-int32_t WaveWriter::getValueL(long pos, bool scratch) {
+int32_t WaveWriter::getValueL(int32_t pos, bool scratch) {
   int16_t value;
   
   if (scratch) {
@@ -188,7 +189,7 @@ int32_t WaveWriter::getValueL(long pos, bool scratch) {
   }
 }
   
-int32_t WaveWriter::getValueR(long pos,bool scratch) {
+int32_t WaveWriter::getValueR(int32_t pos,bool scratch) {
   int16_t value;
   
   if (scratch) {

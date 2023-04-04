@@ -1,0 +1,19 @@
+# triphase-style signal based on volume
+# This one is done with boost aftereffect instead
+output "vol_osc_boost_p5.wav"
+fadein 3
+vol .6
+freq 800
+both
+sound 120 
+rewind
+left
+addtime 5
+boost 115 vol osc .7 to 1.3 freq 2 
+rewind
+addtime 5
+right
+boost 115 vol osc .7 to 1.3 freq 2 phase .4
+rewind
+both
+boost 115 vol ramp .8 to 1.

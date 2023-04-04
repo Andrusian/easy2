@@ -1,0 +1,30 @@
+# conceptually, this is three waves breaking from left to right
+
+output "waves.wav"
+
+tri
+
+left
+freq 900
+freq2 1050
+vol2 .18
+
+counter1=20
+sound 1.6 vol osc .4 to .6 freq 4 sine shape pulse3
+silence .4
+loop counter1
+silence 0.8
+
+time 0
+right
+freq 900.5
+freq2 1050.5
+vol2 .18
+
+silence 0.8
+counter2=20
+sound 1.6 vol osc .4 to .6 freq 4 sine shape pulse3
+silence .4
+loop counter2
+
+

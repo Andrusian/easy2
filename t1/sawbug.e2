@@ -1,0 +1,3 @@
+output "junk.wav"
+saw
+sound 10

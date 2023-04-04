@@ -1,0 +1,6 @@
+output "double.wav"
+fadeout 1
+sound 30 left freq 800 vol (osc .6 .8 freq (ramp .5 4 30))
+rewind
+sound 30 right freq (osc 800.5 802 freq 1)
+

@@ -1,0 +1,13 @@
+# triphase-style signal based on volume
+fadein 3
+output "vol_osc_1s.wav"
+freq 800
+left
+sound 120 vol osc .3 to .8 freq 1
+rewind
+right
+sound 120 vol osc .3 to .8 freq 1 phase osc .4 to .1 freq 5p
+both
+rewind
+boost 120 vol ramp .8 to 1.
+

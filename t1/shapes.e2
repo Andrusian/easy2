@@ -1,0 +1,47 @@
+output "shapes.wav"
+freq 240
+vol 1.
+fadein 0s
+sound 10 notch3 1
+sound 10 notch2 1
+sound 10 notch1 1
+
+silence 5
+
+sound 10 tease1 2          # test each sound once with repeats
+sound 10 tease2 2
+sound 10 tease3 2
+
+silence 10
+
+sound 10 pulse1 2
+sound 10 pulse2 2
+sound 10 pulse3 2
+
+silence 15
+
+sound 10 kick1 2
+sound 10 kick2 2
+sound 10 kick3 2
+
+silence 20
+
+sound 10 adsr1 2
+sound 10 adsr2 2
+sound 10 adsr3 2
+
+silence 25
+
+sound 1 freq 400 vol .99
+sound 10 rev1 2
+sound 1 freq 400 vol .99
+sound 10 rev2 2
+sound 1 freq 400 vol .99
+sound 10 rev3 2
+
+silence 25
+
+sound 1 freq 400 vol .99
+sound 10 rev3             # tests without a length and scaled
+sound 1 freq 400 vol .99
+sound 10 vol .4 rev3      # test reduced volume

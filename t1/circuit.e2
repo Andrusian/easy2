@@ -1,0 +1,25 @@
+# tests the effects of the circuit model
+#
+# normally, we assume that the synth is perfect
+# the circuit causes 1st and 2nd order effects in the
+# output causing more complex waveforms
+
+output "circuit.wav"
+fadein 0
+freq 600
+form square                # off
+vol .5
+sound 1
+circuit
+form square                # on - easiest to see with ssquare
+sound 1
+nocircuit
+sound 1
+circuit
+cirp ramp .1 .8 10         # shows diminishing effect with increasing cirp
+sound 10
+ciri ramp .1 .8 10        # increasing effect with ciri
+cirp .3
+sound 10
+
+

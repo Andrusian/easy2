@@ -1,0 +1,5 @@
+output "seq.wav"
+freqseq=freq seq 50,1,100,1,200,.5,400,1,20,0                # loops
+volseq=vol seq  .1,2      ,.2,3,.4,4,.6,3                   # does not loop
+sound 20 left freqseq
+sound 20 right volseq

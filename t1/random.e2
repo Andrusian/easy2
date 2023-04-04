@@ -1,0 +1,4 @@
+output "random.wav"
+sound 30 left vol randseq (.2 .8 .3) freq randseq (80 230 .1)
+rewind
+sound 30 right vol randseq (.2 .8 .3) freq randseq (160 320 .05) 

@@ -1,0 +1,7 @@
+# does a simple phase shift in the left channel at 1s
+output "phase_simple_1s-10+40.wav"
+left
+sound 120 phase osc -.10 to .40 freq 1
+rewind
+right
+sound 120
