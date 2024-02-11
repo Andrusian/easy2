@@ -530,6 +530,7 @@ void doSound (double length, bool scratch) {
       }
     }
 
+
     else if (form==WF_NOISE) {                // NOISE
       noiseCounter++;
       if (noiseCounter>noisePeriod) {   // noise will be influenced by freq
