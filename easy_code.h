@@ -10,6 +10,9 @@
 #ifndef EASY_CODE
 #define EASY_CODE 1
 
+extern int linecount;
+extern int lineNumber;   // have two competing ways to count, trying to figure out which is better
+
 struct node * pop(void);
 struct node * unshift(void);
 //void shift(fpos_t pos, int dtype, float value, char * str);
@@ -103,6 +106,8 @@ void displayForward();
 #define VOL2 41
 #define VOL3 42
 #define RAMPS 43
+#define EXIT 44
+#define TIMESTAMP 45
 
 #define COMMA 99
 
@@ -124,6 +129,10 @@ void displayForward();
 #define SH_REV1 2016
 #define SH_REV2 2017
 #define SH_REV3 2018
+#define SH_WEDGE1 2019
+#define SH_WEDGE2 2020
+#define SH_GAP1 2021
+#define SH_GAP2 2022
 
 #define NO_NUMBER -9999999
 

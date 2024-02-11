@@ -363,7 +363,7 @@ void doSound (double length, bool scratch) {
   double sineval2;
   double sineval3;
 
-  // std::cout << "Sound from " << masterTime << " to " << endTime << "\n";
+  std::cout << "Sound from " << masterTime << " to " << endTime << "\n";
 
   // what if no output command was ever given?
   // initialize output buffers to default
@@ -388,6 +388,11 @@ void doSound (double length, bool scratch) {
   NumberDriver * freqFD=settings.freqStack.top();
   NumberDriver * phaseFD=settings.phaseStack.top();
   int form=settings.formStack.top();
+  NumberDriver * dutyFD=settings.dutyStack.top();  
+
+  // initialize shape if it is being used and not already set
+
+  dutyFD->init(soundLengthX);  // needs initializing, I guess
   
   freqFD->init(0);                  
   phaseFD->init(0);                  
@@ -399,7 +404,6 @@ void doSound (double length, bool scratch) {
   settings.vol3->init(0);
     
   freq=freqFD->getValue(0);        // get frequency setting
-  dutyThresh=settings.duty->getValue(0);  // get duty setting
   uint32_t freqRefX=0;                    // starting point for calc freq
   circuit.zero();                        // clear any history in Circuit model
 
@@ -446,6 +450,19 @@ void doSound (double length, bool scratch) {
     double fadeout=calcFadeout(x,startX,endX);
 
     // effective volume...
+    //
+    // BUG here... phase should be affecting these as well
+    // but this is the phase of their numberDrivers,
+    // not the phase of the waveform (nested oscillators).
+    //
+    // this is the problem:
+    // sound 10 phase .2 vol osc .5 to 1 freq 1p phase .5
+    //
+    // the first phase .2 affects the sine wave itself
+    // the second phase .5 affects the volume modifier
+    //
+    // I think the answer is to handle it down in the NumberDriver. And I guess
+    // this could stack deeper, but the uses get harder to justify.
 
     double shapevol=settings.shape->getValue(x);
     double vol=abs(settings.vol->getValue(x));
@@ -478,7 +495,7 @@ void doSound (double length, bool scratch) {
     
     // update duty...
 
-    dutyThresh=settings.duty->getValue(x);
+    dutyThresh=dutyFD->getValue(x);
     
     // printf("phase: %d %f %d\n",x,phase,phaseX);
     

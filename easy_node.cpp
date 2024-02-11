@@ -184,9 +184,8 @@ void displayForward() {
 void insertNodes(node *to, node*from) {
   node * z;
   node *lhs=to->lft;
-  node *eolist;
+  // node *eolist;
   node *eocopy;
-  node *after=to->rght;
 
   node * copy=copyNodes(from);
   for (z=copy;z->rght!=NULL;z=z->rght) { 
@@ -207,9 +206,6 @@ void insertNodes(node *to, node*from) {
 
   if (eocopy->rght==NULL) {  // if it is at end of line
     elist=eocopy;
-  }
-  else {
-    after=eocopy;
   }
 }
 

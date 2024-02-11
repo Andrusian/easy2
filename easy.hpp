@@ -95,6 +95,12 @@ class Ramp: public NumberDriver {  // derived class for a ramp
 
     if (length==-1) {   // is length unknown?
       length=soundLengthX;
+      printf ("auto-set ramp length to %d samples SR=%d %fs\n",length,SR,1.*length/SR);
+    }
+
+    if (length==0) {
+      printf ("Unable to set length on ramp for some reason. Please manually add it.\n");
+      exit(0);
     }
     
     rem=(x-reftime)%length;  // using remainder implements repeating
@@ -103,7 +109,6 @@ class Ramp: public NumberDriver {  // derived class for a ramp
   }
   
   void init(long) {
-
   }
 
 };
@@ -122,15 +127,19 @@ public:
   double freq;
   NumberDriver * freqDriver;
   NumberDriver * phaseDriver;
+  NumberDriver * dutyDriver;
   double lastfreq;
   double lastval;
   uint32_t countX;
+  int32_t relX;
+  uint32_t splitpt;
   uint32_t periodX;
   int tridirection;
   double sawval;
   double trislope;
   double sawslope;
   double oscval;
+  double dutyV;
   
   // OSCs and SOUNDs share two settings:
   // FREQ and FORM
@@ -147,7 +156,7 @@ public:
   // needs passed in when it is created. And
   // this is the job of the creating function.
   
-  Osc(double minV,double maxV,NumberDriver *fd,int inform, NumberDriver *phase) {
+  Osc(double minV,double maxV,NumberDriver *fd,int inform, NumberDriver *phase, NumberDriver *duty) {
 
     if (minV>maxV) {
       minValue=maxV;
@@ -163,14 +172,21 @@ public:
 
     freqDriver=fd;
     phaseDriver=phase;
+    dutyDriver=duty;
 
     freqDriver->init(0);
     phaseDriver->init(0);
+    dutyDriver->init(0);
 
     form=inform;
     refX=0;
     
-    // printf("osc: %f to %f form %d freq: %f phase:%f\n", minValue,maxValue,inform,freqDriver->getValue(0),phase->getValue(0));
+//    printf("osc: %f to %f form %d freq: %f phase:%f duty: %f\n",
+//           minValue,maxValue,
+//           inform,
+//           freqDriver->getValue(0),
+//           phase->getValue(0),
+//           duty->getValue(0));
   }
   void setValue(double value) {
 
@@ -198,13 +214,38 @@ public:
     // code will be kept as compact as possible
 
     if (form==WF_SINE) {               // SINE
+
+      // phase effect is supported on SINE
+      
       oscval=sin(2.*M_PI*freq*( ((double)(x)-double(refX)+phaseX) / SR));
     }
     else if (form==WF_SQUARE) {               // SQUARE
-      if (countX>periodX) oscval=0;
-      else if (countX>(periodX/2)) oscval=1;
-      else oscval=-1;
+      dutyV=dutyDriver->getValue(x);
+      splitpt=periodX*dutyV+phaseX;   // the comparison adjusted for phase
+      
+      if (countX<(unsigned int) phaseX) {       // still in previous wave before true zone
+        oscval=-1;
+      }
+      else if ((countX>=(unsigned int)phaseX)&&(countX<splitpt)) {  // in true zone
+        oscval=1;
+      }
+      else if (countX>=splitpt) {
+        oscval=-1;                   // beyond true zone
+      }
+      else {
+        printf("osc square wave error %d",relX);
+        exit(-2);
+      }
+      //     printf ("countX: x %d phaseX %d relX %d duty %f, splitpt %d oscval = %f \n",
+      //        countX,
+      //        phaseX,
+      //        relX,
+      //        dutyV,
+      //        splitpt,
+      //        oscval
+      //        );
     }
+    
     else if (form==WF_TRI) {            // TRI
       if (countX==0)  {
         tridirection=1;
@@ -260,12 +301,15 @@ public:
       // printf ("osc: not zero crossing %d %f %f\n",x,lastval,oscval);
     }
     lastval=oscval;
-
+    
     value=oscval*amplitude+midValue;
 
-    //if (form==WF_SQUARE) {               // SQUARE
-    //  printf ("osc: x %d val %f =oscval %f x %f amplitude %f midValue \n",countX,value,oscval,amplitude,midValue);
-    //}
+//    if (form==WF_SQUARE) {
+//      printf ("oscval: %f amplitude: %f midValue: %f --> output: %f\n",
+//              oscval, amplitude,midValue,value
+//              );
+//    }
+
     
     return value;
   }
@@ -274,6 +318,7 @@ public:
     freqDriver->init(0);
     phaseDriver->init(0);
     freq=freqDriver->getValue(0);
+    dutyDriver->init(0);
 
     lastfreq=freq;
     refX=0;
@@ -559,6 +604,12 @@ public:
       length=len;
       lenX=len;
     }
+    
+    if (length==0) {
+      printf ("Unable to set length on shape for some reason. Please manually add it.\n");
+      exit(0);
+    }
+
     //printf("init: length is %d\n",length);
     
     loadTable();
@@ -658,10 +709,11 @@ struct settings_struct {
 
 struct settings_struct_stacked {
 
-  // these three settings overlap and need to be in a stack  
+  // these settings overlap and need to be in a stack  
 
   std::stack<NumberDriver *> freqStack;
   std::stack<NumberDriver *> phaseStack;
+  std::stack<NumberDriver *> dutyStack;
   std::stack<int> formStack;
 
   // the rest of these settings merely fall back to defaults
@@ -672,7 +724,6 @@ struct settings_struct_stacked {
   NumberDriver *vol2;
   NumberDriver *vol3;
   NumberDriver *bal;
-  NumberDriver *duty;
   NumberDriver *shape;
   bool left;
   bool right;

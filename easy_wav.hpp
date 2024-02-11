@@ -81,13 +81,13 @@ public:
   ~WaveWriter();
 
   int32_t findPosition(double targetTime);
-  double findTime(int32_t position);
-  void setValueL(int32_t pos,int32_t value, bool scratch);
-  void setValueR(int32_t pos,int32_t value, bool scratch);
-  int32_t getValueL(int32_t pos, bool scratch);
-  int32_t getValueR(int32_t pos, bool scratch);
+  double findTime(uint32_t position);
+  void setValueL(uint32_t pos,int32_t value, bool scratch);
+  void setValueR(uint32_t pos,int32_t value, bool scratch);
+  int32_t getValueL(uint32_t pos, bool scratch);
+  int32_t getValueR(uint32_t pos, bool scratch);
   int writeFile (char * filename);
-  void checkSize(int32_t pos);
+  void checkSize(uint32_t pos);
 
   void DEBUG (uint32_t startX,uint32_t endX) {
     uint32_t i;

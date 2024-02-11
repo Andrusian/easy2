@@ -6,11 +6,11 @@
 %}
 
 %%
-"#".*                { /* DO NOTHING */  }
+"#".*                { /* DO NOTHING */; }
 [\t ]+              /* ignore whitespace */
 
 [_][\r\n]            { }
-[\r\n]+              {processCommands(); }
+[\r\n]+              {lineNumber++;processCommands(); }
 
  /* to is necessary to resolve the problem of negatives in arg lists */
 
@@ -107,13 +107,28 @@ adsr3                  {push(SH_ADSR3,0,NULL); }
 rev1                   {push(SH_REV1,0,NULL); }
 rev2                   {push(SH_REV2,0,NULL); }
 rev3                   {push(SH_REV3,0,NULL); }
+wedge1                 {push(SH_WEDGE1,0,NULL); }
+wedge2                 {push(SH_WEDGE2,0,NULL); }
+gap1                   {push(SH_GAP1,0,NULL); }
+gap2                   {push(SH_GAP2,0,NULL); }
 
  /* flow control */
 
 repeat               {push(REPEAT,0,NULL); }
 loop                 {push(LOOP,0,NULL); }
+exit                 {push(EXIT,0,NULL); }
+
+ /* time stamps */
+
+[0-9]+[\:][0-9][0-9]\:[0-9][0-9]  {push(TIMESTAMP,0,yytext); }   // h:mm:ss
+[0-9]+\:[0-9][0-9]                {push(TIMESTAMP,0,yytext); }   // m:ss
+:[0-9]+                           {push(TIMESTAMP,0,(yytext)); }   // :ss
+
+ /* ignore colon otherwise */
 
 [\:]                 { }
+
+ /* math operators */
 
 "+"                  {push(PLUS,0,NULL); }
 "-"                  {push(MINUS,0,NULL);}
@@ -123,9 +138,9 @@ loop                 {push(LOOP,0,NULL); }
 
 [=]                  {push(ASSIGNMENT,0,NULL); }
 
-\"[a-zA-Z0-9_\+\-]+"."[a-zA-Z0-9_]+\" {push(FILENAME,0,doFilename(yytext)); }
+\"[a-zA-Z0-9_\+\-]+"."[a-zA-Z0-9_]+\" {push(FILENAME,0,(char *) doFilename(yytext)); }
 
-[a-zA-Z][a-zA-Z0-9]* {push(STRING,0,strdup(yytext)); }  // note: must start with a letter
+[a-zA-Z][a-zA-Z0-9_]* {push(STRING,0,strdup(yytext)); }  // note: must start with a letter
 
  /* note that negative and positive are handled above in plus/minus */
 
@@ -145,14 +160,16 @@ loop                 {push(LOOP,0,NULL); }
 
 %%
 extern FILE * copyyyin;
+extern char * copyinfile;
 
-int flag48=0;
+int flag48=1;
 
 int main(int argc, char * argv[]) {
   FILE *infile=NULL;
   int i;
 
   printf("EASY2: audio generator\n");
+linecount=0;
 
   if (argc>1) {
     for (i=1;i<argc;i++) {
@@ -173,6 +190,10 @@ int main(int argc, char * argv[]) {
           printf ("\nERROR: unable to open file: %s\n\n",argv[1]);
           return -1;
         }
+copyinfile=malloc(strlen((char *) argv[i])+3);  /* extra character */
+        strcpy((char *)copyinfile,(char *) argv[i]);
+        copyinfile[strlen((char *) argv[i])]='\0';
+        printf("Processing input file: %s\n",argv[i]);
       }
     }
   }

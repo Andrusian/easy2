@@ -40,6 +40,10 @@
 //   rather than 48k MPEG4. Your choice of sample rate matters as
 //   only SoX accurately transcodes 44.1 to 48k.
 //
+// - the external MP3 LAME encoder is used to convert the WAV file to MP3.
+//   This code is written for Linux and will need minor adaptation to
+//   Windows. 
+//
 // The file extension ".e2" is suggested as the source script.
 //
 // The minimum content of a .e2 file is something like:
@@ -80,6 +84,8 @@
 //                    This code actually writes the output.
 //
 // easy_debug.cpp ... extra code to help with debugging
+//
+// easy_mp3.cpp   ... conversion routine for wav->mp3
 //                                                                      
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -107,10 +113,16 @@ extern "C" {
 #include "easy_wav.hpp"
 #include "easy_node.hpp"
 
+
 extern "C" {
   extern int flag48;
   FILE * copyyyin;
+  const char * copyinfile;
+  int linecount;
+  int lineNumber=0;
 }
+
+void doMp3(const char * infile, const char * songname);
 
 
 using namespace std;
@@ -145,15 +157,14 @@ void doReverb (double length, NumberDriver *amt, NumberDriver *del);
 
 // GLOBALS...
 
-int lineNumber=0;
 char * outputFile=NULL;
 node * copyNodes (node * n);
 double masterTime=0;
 WaveWriter *wavout;
 long defaultFormat = 44100;             // 16bit, 44kHz
 const char * defaultFileout = "output.wav";   // because people will forget
-uint32_t SR=44100;                      // sample rate
-uint32_t soundLengthX;                  // length of current sound in samples
+uint32_t SR=999999;                      // sample rate
+uint32_t soundLengthX;                  // length of current sound or boost in samples
 
 Ramp *unusedRamp=NULL;                  // temp, until I figure out what to do with these
 Osc *unusedOsc=NULL;                    // temp, until I figure out what to do with these
@@ -292,6 +303,18 @@ std::vector<double> rev2_entV {.65  ,.7   ,85   ,.88  ,.9   ,.93  ,.96  ,.98  ,.
 std::vector<double> rev3_entT {0    ,.1   ,.2    ,.3   ,.4   ,.5   ,.6     ,.7     ,.8     ,.9   ,.95};
 std::vector<double> rev3_entV {.2   ,.4    ,.6   ,.7   ,.8   ,.9   ,.99    ,.99     ,.99   ,.99  ,.8};
 
+std::vector<double> wedge1_entT {0      ,.4      ,.7    ,.95};
+std::vector<double> wedge1_entV {.001   ,.001    ,.99   ,.99};
+
+std::vector<double> wedge2_entT {0      ,.2      ,.5    ,.95};
+std::vector<double> wedge2_entV {.001   ,.001    ,.99   ,.99};
+
+std::vector<double> gap1_entT {0      ,.9      ,.91    ,.001};
+std::vector<double> gap1_entV {.991   ,.99     ,.001   ,.99};
+
+std::vector<double> gap2_entT {0     ,.15     ,.8      ,.81    ,.001};
+std::vector<double> gap2_entV {.001  ,.99     ,.99     ,.001   ,.99};
+
 
 void Shape::loadTable(void) {
     std::vector<double>::iterator it;
@@ -366,9 +389,21 @@ void Shape::loadTable(void) {
       entV=rev2_entV;
       entT=rev2_entT;
     }
-    else if (preset==SH_REV3) {
-      entV=rev3_entV;
-      entT=rev3_entT;
+    else if (preset==SH_WEDGE1) {
+      entV=wedge1_entV;
+      entT=wedge1_entT;
+    }
+    else if (preset==SH_WEDGE2) {
+      entV=wedge2_entV;
+      entT=wedge2_entT;
+    }
+    else if (preset==SH_GAP1) {
+      entV=gap1_entV;
+      entT=gap1_entT;
+    }
+    else if (preset==SH_GAP2) {
+      entV=gap2_entV;
+      entT=gap2_entT;
     }
 
    // add one more target to every table... for loop around
@@ -446,7 +481,7 @@ void replaceMacro(node * spot, node *nodes) {
   // save old begn and elist in case they are needed
 
   node *oldBegn=begn;
-  node *oldElist=elist;
+  // node *oldElist=elist;
 
   emptyList();
   
@@ -492,14 +527,19 @@ void replaceMacro(node * spot, node *nodes) {
 bool swapVariables(void) {
   int count=0;
   bool found=false;
+  bool loopFlag=false;   // swaps are disabled after loop commands
   
    //start from the begn
    struct node *ptr = begn;
+   // displayBackward();
 	
-   while(ptr != NULL) {
+   while ((ptr != NULL)&&(loopFlag==false)) {
      count++;
 
-     if (ptr->dtype==STRING) {
+     if (ptr->dtype==LOOP) {
+       loopFlag=true;
+     }
+     else if (ptr->dtype==STRING) {
        string name=string(ptr->str);
        
        if (variables.find(name)!=variables.end()) {
@@ -512,7 +552,8 @@ bool swapVariables(void) {
              // change: don't replace node, just populate
              // the value of the variable
 
-             ptr->value=varValues[name];
+             ptr->value=varValues[name];  // change datatype
+             ptr->dtype=NUMBER;          // and fill in number
 
               // flag that this variable was populated with a number
              
@@ -649,7 +690,7 @@ void init (void) {
   defaults.left=true;
   defaults.right=true;
   defaults.phase=new Value(0.0);
-  defaults.duty=new Value(1.0);
+  defaults.duty=new Value(0.5);
   defaults.shape=new Value(1.0);      // no shape by default
   defaults.circuit=false;             // OFF by default
 
@@ -660,6 +701,18 @@ void init (void) {
 
   
   srand(time(NULL));  // init random number generation
+
+
+  if (flag48!=0) {
+    wavout=new WaveWriter(48000*60*60*2.5,48000);
+    SR=48000;
+    printf("Output format is 48kHz, 24 bit .wav\n");
+  }
+  else {
+    wavout=new WaveWriter(44100*60*60*2.5,44100);
+    SR=44100;
+    printf("Output format is 44.1kHz, 16 bit .wav\n");
+  }
 }
 
 //--------------------------------------------------
@@ -670,6 +723,7 @@ void copySettings (void) {
   settings.freqStack.push(defaults.freq);
   settings.formStack.push(defaults.form);
   settings.phaseStack.push(defaults.phase);
+  settings.dutyStack.push(defaults.duty);
   
   settings.freq2=defaults.freq2;
   settings.freq3=defaults.freq3;
@@ -682,7 +736,6 @@ void copySettings (void) {
   settings.bal=defaults.bal;
   settings.left=defaults.left;
   settings.right=defaults.right;
-  settings.duty=defaults.duty;
   settings.shape=defaults.shape;
   settings.circuit=defaults.circuit;
   settings.ciri=defaults.ciri;
@@ -697,10 +750,15 @@ void copySettings (void) {
 void copySettingsToDefaults (void) {
   defaults.freq=settings.freqStack.top();
   settings.freqStack.pop();                   // STL, uuugh. STL is crap.
+
   defaults.form=settings.formStack.top();
   settings.formStack.pop();
+
   defaults.phase=settings.phaseStack.top();
   settings.phaseStack.pop();
+
+  defaults.duty=settings.dutyStack.top();
+  settings.dutyStack.pop();
   
   defaults.freq2=settings.freq2;
   defaults.freq3=settings.freq3;
@@ -713,7 +771,6 @@ void copySettingsToDefaults (void) {
   defaults.bal=settings.bal;
   defaults.left=settings.left;
   defaults.right=settings.right;
-  defaults.duty=settings.duty;
   defaults.circuit=settings.circuit;
   defaults.ciri=settings.ciri;
   defaults.cirp=settings.cirp;
@@ -731,6 +788,16 @@ NumberDriver * getFreqStack (void) {
   nd=settings.freqStack.top();
   if (settings.freqStack.size()>1) {
     settings.freqStack.pop();
+  }
+  return nd;
+}
+
+NumberDriver * getDutyStack (void) {
+  NumberDriver * nd;
+
+  nd=settings.dutyStack.top();
+  if (settings.dutyStack.size()>1) {
+    settings.dutyStack.pop();
   }
   return nd;
 }
@@ -770,7 +837,6 @@ int getFormStack (void) {
 
 NumberDriver * CheckRight (node * n) {
   node * right;
-  Value * NumberDriver;
   
   // first, check to make sure this is not the end of the line
 
@@ -783,6 +849,7 @@ NumberDriver * CheckRight (node * n) {
 
   if (right->dtype==NUMBER) {
     float val=right->value;
+    // printf("...debug value is %f\n",val);
     Value * nd=new Value(val);
     return nd;
   }
@@ -1006,11 +1073,9 @@ void processCommands (void) {
   node * ass;
   updateDefaults=true;
   
-  lineNumber++;
-  
   copySettings();
 
-  printf("line %d\n",lineNumber);
+  printf("line %d ",lineNumber);
   // printf("  before swapVariables... \n");
   
   // displayForward();
@@ -1135,14 +1200,29 @@ void lookForRepeat() {
 
 void finish(void) {
 
-  if ((wavout==NULL)||(outputFile==NULL)) {
-    printf ("\nError: did you provide a output filename?\n\n");
-    exit(-1);
+  if (outputFile==NULL) {
+
+    // auto generate filename from infile if not specified
+    
+    printf("Infile was %s\n",copyinfile);
+    outputFile=strdup(copyinfile);
+    char * location=strcasestr(outputFile,".e2");
+    if (location==NULL) {
+      printf("Sorry - expecting .e2 input filename. Could not output.\n");
+      exit(-1);
+    }
+    location++;  *location='w';
+    location++;  *location='a';
+    location++;  *location='v';
+    location++;  *location='\0';
+
+    printf("Output automatically set to %s\n",outputFile);
   }
   
   printf ("writing file %s\n",outputFile);
   
   wavout->writeFile(outputFile);
+  doMp3(outputFile,copyinfile);
 }
 
 //----------------------------------------------------------------------
@@ -1232,11 +1312,11 @@ bool loadSeq(node * n, Seq * seq, Ramps *rmp) {
     }
     n=GetRight(n);              // move right skipping NOOP and COMMA
     
-    if (n->dtype==NUMBER) {    // number?
+    if (n->dtype==NUMBER) {    // number?   
       v1=n->value;             // get it
     }
     else {
-      syntaxError(n,"Need number for value table\n");
+      syntaxError(n,"Need number for value table\n");  //TODO: this is an error
       exit(0);
     }
     
@@ -1302,7 +1382,6 @@ void doMath0 (void) {
   node *left;
 
   for (cur=begn; cur!=NULL; cur=cur->rght) {
-    double result;
     if (cur->dtype==PLUS) {
       left=cur->lft;
       right=cur->rght;
@@ -1478,6 +1557,85 @@ void doMath2 (void) {
 }
 
 //----------------------------------------------------------------------
+// converts timestamps to numbers of seconds by converting node
+//
+// the return value is really just for debugging
+
+int convertTimeStampToNumber(node * cur) {
+  float value=0;
+  char * colon1=NULL;
+  char * colon2=NULL;
+  char * timestamp=strdup(cur->str);
+  char * spot;
+  
+  //printf("DEBUG: timestamp is %s\n", timestamp);
+
+  // count the number of colons and their location
+  // shit, there's probably a better C++ way to do this, but whatever
+  // it's cold out and I feel like writing this from scratch
+
+  for (spot=timestamp+strlen(timestamp); spot>=timestamp; spot--) {
+
+    //printf ("char: %c\n",*spot);
+    if (*spot==':') {
+      if (colon1==NULL) {           // leftmost colon
+        colon1=spot;
+      }
+      else if (colon2==NULL) {      // 2nd colon
+        colon2=spot;
+      }
+      else {
+        //printf("That's a colon too many in this timestamp.\n");
+        exit(-1);
+      }
+    }
+  }
+
+  // okay, not let's iterpret what we have...
+
+  if ((colon1==NULL)&&(colon2==NULL)) {  // no colons at all
+    //printf("Timespec parsing error.\n");
+    exit(-1);
+  }
+
+  // having covered fractional seconds here
+  // I'll get around to it
+  
+  if ((colon1!=NULL)&&(colon1==timestamp)) {  // e.g. :45
+    value=atof(colon1+1);
+  }
+  else if ((colon1!=NULL)&&(colon2==NULL)&&(colon1!=timestamp)) {  // e.g. 2:45
+    value=atof(colon1+1);    // convert the seconds
+    //printf("DEBUG: timestamp starts with %f\n", value);
+    *colon1='\0';
+    float value2=atof(timestamp);  // convert the minutes
+    //printf("DEBUG: timestamp and adds %f\n", value2*60);
+    value+=value2*60;
+  }
+  else if ((colon1!=NULL)&&(colon2!=NULL)) {  // e.g. 1:23:45
+    value=atof(colon1+1);    // convert the seconds
+    //printf("DEBUG: timestamp starts with %f\n", value);
+    *colon1='\0';
+    float value2=atof(colon2+1);   // convert the minutes
+    //printf("DEBUG: timestamp adds %f\n", value2*60);
+    value+=value2*60;
+    *colon2='\0';
+    float value3=atof(timestamp);
+    //printf("DEBUG: timestamp adds another %f\n", value3*60*60);
+    value+=value3*60*60;
+  }
+
+  //printf("DEBUG: timestamp works out to %f\n", value);
+
+  // amend the current node to be a number
+
+  cur->value=value;
+  cur->dtype=NUMBER;
+  
+  return value;
+}
+  
+//----------------------------------------------------------------------
 // doStuff
 //
 // This handles whatever is left.
@@ -1487,7 +1645,6 @@ void doMath2 (void) {
 void doStuff(void) {
   node *cur;
   NumberDriver * item;
-  node *arg;
 
   //displayForward();
   //displayBackward();
@@ -1505,7 +1662,15 @@ void doStuff(void) {
     // these are settings that take a NumberDriver as
     // am argument
     
-    if (cur->dtype==FREQ) {                
+    if (cur->dtype==EXIT) {
+      printf("cmd: exit --- COMMAND TO EXITING EARLY!\n");
+      finish();
+      exit(0);
+    }
+    if (cur->dtype==TIMESTAMP) {
+      convertTimeStampToNumber(cur);
+    }
+    else if (cur->dtype==FREQ) {                
         printf("cmd: freq\n");
         item=CheckRight(cur);               
         if (item==NULL) syntaxError(cur,"No frequency specified.\n");
@@ -1534,12 +1699,6 @@ void doStuff(void) {
         item=CheckRight(cur);
         if (item==NULL) syntaxError(cur,"Need parameter for circuit modeling integral term.\n");
         settings.ciri=item;
-    }
-    else if (cur->dtype==DUTY) {             
-        printf("cmd: duty\n");
-        item=CheckRight(cur);
-        if (item==NULL) syntaxError(cur,"No duty specified.\n");
-        settings.duty=item;
     }
     else if (cur->dtype==VOL) {             
       printf("cmd: vol\n");
@@ -1571,9 +1730,16 @@ void doStuff(void) {
       if (item==NULL) syntaxError(cur,"No phase specified.\n");
       settings.phaseStack.push(item);
     }
-
-
-
+    else if (cur->dtype==DUTY) {             
+      printf("cmd: duty\n");
+      
+      item=CheckRight(cur);
+      if (item==NULL) {
+        syntaxError(cur,"No duty specified.\n");
+      }
+      
+      settings.dutyStack.push(item);
+    }
 
     //--------------------------------------------------
     // simple settings
@@ -1612,16 +1778,19 @@ void doStuff(void) {
         steps=1;
       }
 
-      // printf("cmd debug: rewind %d %d %f\n",steps,rewindHistory.size(),masterTime);
+      printf("cmd debug: rewind %d %ld %f\n",steps,rewindHistory.size(),masterTime);
 
       if ((rewindHistory.size()-1)<1) {
-        syntaxError(NULL,"can't rewind before 0 time\n");
+        // syntaxError(NULL,"can't rewind before 0 time\n");
+        masterTime=0.0;
       }
       else if (steps<1) {
         syntaxError(NULL,"rewind needs a number > 0 or nothing\n");
       }
       else {
-        for (int i=0; i<steps; i++) {
+        for (int i=1; i<steps; i++) {
+          masterTime=rewindHistory.top();
+          printf("rewind debug skipping %f \n",masterTime);
           rewindHistory.pop();
         }
         masterTime=rewindHistory.top();
@@ -1737,6 +1906,12 @@ void doStuff(void) {
       if (spot==NULL) {
         syntaxError(spot,"Need the 'to' keyword in ramp.\n");
       }
+      else if (spot->dtype==TO) {
+        // printf ("Found 'to' in ramp.\n");
+      }
+      else {
+        syntaxError(spot,"Need the 'to' keyword in ramp.\n");
+      }
       
       double endV=NumberRight(spot);            // mandatory arg
       long rampLen=-1;
@@ -1844,7 +2019,7 @@ void doStuff(void) {
       // at minimum, we need to know the frequency. There will be
       // a default frequency but it is unlikely to be useful.
 
-      Osc *unusedOsc=new Osc(minV, maxV, getFreqStack(),getFormStack(),getPhaseStack());
+      Osc *unusedOsc=new Osc(minV, maxV, getFreqStack(),getFormStack(),getPhaseStack(),getDutyStack());
       cur->nd=unusedOsc;                           // store this with the node
 
       // note that each of the three overlapping settings from stack will get 'consumed'
@@ -1860,15 +2035,17 @@ void doStuff(void) {
       printf("cmd: sound\n");
              
       double soundLength=NumberRight(cur);
+      soundLengthX=soundLength*SR;        // needed for shape and ramp
+
       if (soundLength==-1) {
         syntaxError(cur,"A sound must have a length.\n");
       }
       else {
+        rewindHistory.push(masterTime);
         doSound(soundLength,false);
         updateDefaults=false;
         // printf("don't update defaults\n");
         masterTime+=soundLength;
-        rewindHistory.push(masterTime);
       }
     }
       
@@ -1876,16 +2053,18 @@ void doStuff(void) {
       printf("cmd: mix\n");
              
       double soundLength=NumberRight(cur);
+      soundLengthX=soundLength*SR;        // needed for shape and ramp
+      
       if (soundLength==-1) {
         syntaxError(cur,"A sound must have a length.\n");
       }
       else {
+        rewindHistory.push(masterTime);
         doSound(soundLength,true);           // write to scratch space first
         doMix(soundLength);
         updateDefaults=false;
-        printf("don't update defaults\n");
+        // printf("don't update defaults\n");
         masterTime+=soundLength;
-        rewindHistory.push(masterTime);
       }
     }
 
@@ -1897,11 +2076,11 @@ void doStuff(void) {
         syntaxError(cur,"Silence must have a length.\n");
       }
       else {
+        rewindHistory.push(masterTime);
         doSilence(silenceLength);
         updateDefaults=false;
         printf("don't update defaults\n");
         masterTime+=silenceLength;
-        rewindHistory.push(masterTime);
       }
     }
 
@@ -1909,6 +2088,9 @@ void doStuff(void) {
       printf("cmd: boost\n");
              
       double boostLength=NumberRight(cur);
+      soundLengthX=boostLength*SR;        // needed for shape and ramp
+      rewindHistory.push(masterTime);
+
 //      NumberDriver * boostAmount=CheckRight(cur->rght);
       NumberDriver * boostAmount=settings.vol;
 
@@ -1923,13 +2105,13 @@ void doStuff(void) {
         doBoost(boostLength, boostAmount);
         updateDefaults=false;
         masterTime+=boostLength;
-        rewindHistory.push(masterTime);
       }
     }
 
     else if (cur->dtype==REVERB) {                                       // after effect
       printf("cmd: reverb\n");
              
+      rewindHistory.push(masterTime);
       double reverbLength=NumberRight(cur);
       //      NumberDriver * boostAmount=CheckRight(cur->rght);  // done through vol
       NumberDriver * reverbDelay=CheckRight(cur->rght);
@@ -1946,7 +2128,6 @@ void doStuff(void) {
         doReverb(reverbLength, reverbAmount, reverbDelay);
         updateDefaults=false;
         masterTime+=reverbLength;
-        rewindHistory.push(masterTime);
       }
     }
 
@@ -2035,14 +2216,7 @@ void doStuff(void) {
       if (outputFile==NULL) {
         syntaxError(cur,"Output filename is not specified\n");
       }
-      if (flag48!=0) {
-        wavout=new WaveWriter(48000*60*10,48000);
-        printf("Output format is 48kHz, 24 bit .wav\n");
-      }
-      else {
-        wavout=new WaveWriter(44100*60*10,44100);
-        printf("Output format is 44.1kHz, 16 bit .wav\n");
-      }
+      
       // printf("cmd: output\n");
     }
     cur=cur->lft;

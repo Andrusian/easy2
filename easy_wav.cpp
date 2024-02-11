@@ -49,7 +49,7 @@ WaveWriter::WaveWriter(int32_t size, uint32_t sampleRate) {
       scratch16R=(int16_t *)calloc (size,sizeof(int16_t));
       MAXVAL=pow(2,15)-1;
     }
-    else if (sampleRate=48000) { 
+    else if (sampleRate==48000) { 
       wav.SamplesPerSec=sampleRate;
       wav.bytesPerSec=wav.SamplesPerSec*2*16/8;
       wav.bitsPerSample=16;
@@ -113,14 +113,14 @@ int32_t WaveWriter::findPosition(double targetTime) {
 //----------------------------------------------------------------------
 // convert a position to a time
   
-double WaveWriter::findTime(int32_t position) {
+double WaveWriter::findTime(uint32_t position) {
     return floor(position/sr);
 }
 
 //----------------------------------------------------------------------
 // if we run out of buffer, double the size
 
-void WaveWriter::checkSize(int32_t pos) {
+void WaveWriter::checkSize(uint32_t pos) {
   if (pos>size) {
     size=size*2;
     printf("WAVWRITER: reallocating buffer to %ld samples\n",size);
@@ -132,14 +132,14 @@ void WaveWriter::checkSize(int32_t pos) {
 
   // keep tabs on last position written
   
-  if (pos>maxPos) {
+  if (pos>maxPos) {    
     maxPos=pos;
   }
 }
 
 //----------------------------------------------------------------------
 
-void WaveWriter::setValueL(int32_t pos,int32_t value, bool scratch) {
+void WaveWriter::setValueL(uint32_t pos,int32_t value, bool scratch) {
   checkSize(pos);
   
   if (scratch) {
@@ -159,7 +159,7 @@ void WaveWriter::setValueL(int32_t pos,int32_t value, bool scratch) {
   }
 }
   
-void WaveWriter::setValueR(int32_t pos,int32_t value,bool scratch) {
+void WaveWriter::setValueR(uint32_t pos,int32_t value,bool scratch) {
   if (scratch) {
     scratch16R[pos]=value;
     if (pos>scratchPos) {
@@ -176,7 +176,7 @@ void WaveWriter::setValueR(int32_t pos,int32_t value,bool scratch) {
 
 //----------------------------------------------------------------------
 
-int32_t WaveWriter::getValueL(int32_t pos, bool scratch) {
+int32_t WaveWriter::getValueL(uint32_t pos, bool scratch) {
   int16_t value;
   
   if (scratch) {
@@ -189,7 +189,7 @@ int32_t WaveWriter::getValueL(int32_t pos, bool scratch) {
   }
 }
   
-int32_t WaveWriter::getValueR(int32_t pos,bool scratch) {
+int32_t WaveWriter::getValueR(uint32_t pos,bool scratch) {
   int16_t value;
   
   if (scratch) {
