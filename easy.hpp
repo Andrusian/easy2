@@ -213,7 +213,7 @@ public:
     // secondary functionality like duty isn't supported
     // code will be kept as compact as possible
 
-    if (form==WF_SINE) {               // SINE
+    if ((form==WF_SINE)||(form==WF_NOISE)) {      // SINE, ignore NOISE
 
       // phase effect is supported on SINE
       

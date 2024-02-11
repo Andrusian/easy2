@@ -86,6 +86,8 @@ square               {push(WF_SQUARE,0,NULL); }
 saw                  {push(WF_SAW,0,NULL); }
 tri                  {push(WF_TRI,0,NULL); }
 tens                 {push(WF_TENS,0,NULL); }
+noise                {push(WF_NOISE,0,NULL); }
+
 
  /* sound shapes */
 
@@ -169,7 +171,7 @@ int main(int argc, char * argv[]) {
   int i;
 
   printf("EASY2: audio generator\n");
-linecount=0;
+  linecount=0;
 
   if (argc>1) {
     for (i=1;i<argc;i++) {
@@ -190,7 +192,7 @@ linecount=0;
           printf ("\nERROR: unable to open file: %s\n\n",argv[1]);
           return -1;
         }
-copyinfile=malloc(strlen((char *) argv[i])+3);  /* extra character */
+        copyinfile=malloc(strlen((char *) argv[i])+3);  /* extra character */
         strcpy((char *)copyinfile,(char *) argv[i]);
         copyinfile[strlen((char *) argv[i])]='\0';
         printf("Processing input file: %s\n",argv[i]);

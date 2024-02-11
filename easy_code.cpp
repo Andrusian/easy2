@@ -1854,6 +1854,10 @@ void doStuff(void) {
       printf("cmd: tens\n");
       settings.formStack.push(WF_TENS);
     }
+    else if (cur->dtype==WF_NOISE) {
+      printf("cmd: noise\n");
+      settings.formStack.push(WF_NOISE);
+    }
 
     // handle all the sound shapes here. These are all simple
     // settings that optionally take a single optional parameter

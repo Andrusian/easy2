@@ -362,6 +362,8 @@ void doSound (double length, bool scratch) {
   Circuit circuit;
   double sineval2;
   double sineval3;
+  int noiseCounter=0;
+  double noisePeriod=0;
 
   std::cout << "Sound from " << masterTime << " to " << endTime << "\n";
 
@@ -436,6 +438,7 @@ void doSound (double length, bool scratch) {
     
     double phase=phaseFD->getValue(x);
     int32_t phaseX=phase*SR/freq;
+    noisePeriod=SR/freq;     // period to change noise signal
 
     countXadj=countX+phaseX;  // adjust our counter for phase
       
@@ -524,6 +527,13 @@ void doSound (double length, bool scratch) {
       }
       else {
         sineval=-1;
+      }
+    }
+
+    else if (form==WF_NOISE) {                // NOISE
+      noiseCounter++;
+      if (noiseCounter>noisePeriod) {   // noise will be influenced by freq
+        sineval=((float) rand()*2./(float) (RAND_MAX)-1);
       }
     }
     

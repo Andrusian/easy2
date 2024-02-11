@@ -54,6 +54,7 @@ void displayForward();
 #define WF_SAW 1002
 #define WF_TRI 1003
 #define WF_TENS 1004
+#define WF_NOISE 1005
 
 #define PLUS -1
 #define MINUS -2
