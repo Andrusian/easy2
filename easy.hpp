@@ -297,13 +297,25 @@ public:
 //             ,countX,adjCountX,oscval,trislope,splitpt,endpt);
 
     }
+
+    //-------------------------------------SAW
     
-    else if (form==WF_SAW) {            // SAW
-      if (countX>periodX) sawval=0;
-      else if (countX==periodX/2) sawval=-1.0;
-      else sawval+=sawslope;
-      if (sawval>1.0) sawval=-1.;
-      oscval=sawval;
+    else if (form==WF_SAW) {
+      int32_t adjCountX;
+
+      // SAW supports phase but not duty
+      //
+      // map countX to adjCountX while keeping it within bounds 0 to periodX
+
+      adjCountX=countX+phaseX;  
+      if (adjCountX<0) {
+        adjCountX=adjCountX+periodX;
+      }
+      else if (adjCountX>(int) periodX) {
+        adjCountX=adjCountX-periodX;
+      }
+      
+      oscval=-1+sawslope*adjCountX;
     }
     
     // do we need to update frequency?

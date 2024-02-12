@@ -141,7 +141,7 @@ public:
 void updatePeriods(void) {
   periodX=int(SR/freq);
   dutyX=int(SR/freq)*dutyThresh; 
-  sawslope=2./dutyX;
+  sawslope=1./dutyX;
   trislope=2./dutyX;
   waitX=(periodX-dutyX)/2;
 }
@@ -426,7 +426,6 @@ void doSound (double length, bool scratch) {
 
   for (uint32_t x=0;x<deltaX;x++) {
     countX++;
-    double sawval;
 
     // current phase percent and frames...
     // e.g. -.3*44100/1000 = -13 frames ... range would be -22 to +22
@@ -559,16 +558,13 @@ void doSound (double length, bool scratch) {
       if ((adjCountX>=0)&&(adjCountX<splitpt)) {
         // oscval=1;
         sineval=-1+trislope*adjCountX;
-//        printf("A -"); 
       }
       else if ((adjCountX>=splitpt)&&(adjCountX<=endpt)) {
         // oscval=-1;
         sineval=1-trislope*(adjCountX-splitpt);
-//        printf("B -"); 
       }
       else {
         sineval=0;
-//        printf("C -"); 
       }
 
 //      printf("countX %d adjphase %d oscval %f trislope %f splitpt %d endpt %d\n"
@@ -578,24 +574,23 @@ void doSound (double length, bool scratch) {
     
     else if (form==WF_SAW) {            // SAW
 
-      // note: duty cycle gets strange on saw above values
-      // around 80%, but I'll leave it be
+      // SAW supports phase but not duty
+      // both negative and positive swing on SAW are needed
+      // for one full wavelength
+
+      int32_t adjCountX;
       
-      if ((countXadj)>dutyX)  {
-        sawval=0;
+      // map countX to adjCountX while keeping it within bounds 0 to periodX
+
+      adjCountX=countX+phaseX;  
+      if (adjCountX<0) {
+        adjCountX=adjCountX+periodX;
       }
-      else if ((countXadj)==dutyX/2)  {
-        sawval=-1.0;
-      }  
-      else {  
-        sawval+=sawslope;
+      else if (adjCountX>(int) periodX) {
+        adjCountX=adjCountX-periodX;
       }
       
-      if (sawval>1.0) {
-        sawval=-1.;
-      }
-      sineval=sawval;
-      // std::cout << "saw: " << " " << sawval << " " << sawslope << " \n";
+      sineval=-1+sawslope*adjCountX;
     }
 
     else if (form==WF_TENS) {            // TENS
