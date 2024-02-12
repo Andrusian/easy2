@@ -130,10 +130,12 @@ public:
   NumberDriver * dutyDriver;
   double lastfreq;
   double lastval;
-  uint32_t countX;
+  int32_t countX;
+  int32_t adjCountX;
   int32_t relX;
-  uint32_t splitpt;
-  uint32_t periodX;
+  int32_t splitpt;
+  int32_t endpt;
+  int32_t periodX;
   int tridirection;
   double sawval;
   double trislope;
@@ -209,24 +211,32 @@ public:
     double phaseV=phaseDriver->getValue(x);
     int32_t phaseX=phaseV*periodX;
     
-    // OSC supports SINE, SQUARE, TRI, and SAW
-    // secondary functionality like duty isn't supported
+    // OSC supports SINE, SQUARE, TRI, and SAW 
     // code will be kept as compact as possible
 
-    if ((form==WF_SINE)||(form==WF_NOISE)) {      // SINE, ignore NOISE
+    //-------------------------------------SINE
+
+    if ((form==WF_SINE)||(form==WF_NOISE)) {  // SINE, ignore NOISE
 
       // phase effect is supported on SINE
       
       oscval=sin(2.*M_PI*freq*( ((double)(x)-double(refX)+phaseX) / SR));
     }
+
+    //-------------------------------------SQUARE
+    
     else if (form==WF_SQUARE) {               // SQUARE
+
+      // phase NumberDriver is also supposted in SQUARE
+      // and duty NumberDriver effect is also supposted in SQUARE
+      
       dutyV=dutyDriver->getValue(x);
       splitpt=periodX*dutyV+phaseX;   // the comparison adjusted for phase
       
-      if (countX<(unsigned int) phaseX) {       // still in previous wave before true zone
+      if (countX<phaseX) {   // still in previous wave before true zone
         oscval=-1;
       }
-      else if ((countX>=(unsigned int)phaseX)&&(countX<splitpt)) {  // in true zone
+      else if ((countX>=phaseX)&&(countX<splitpt)) {  // in true zone
         oscval=1;
       }
       else if (countX>=splitpt) {
@@ -245,31 +255,47 @@ public:
       //        oscval
       //        );
     }
+
+    //-------------------------------------TRI
     
-    else if (form==WF_TRI) {            // TRI
-      if (countX==0)  {
-        tridirection=1;
-      }  
-      else if (countX==periodX/4)  {
-        tridirection=-1;
-        sawval=1.0;
+    else if (form==WF_TRI) {
+      
+      // phase NumberDriver is also supported in TRI
+
+      // map countX to adjCountX while keeping it within bounds 0 to periodX
+
+      adjCountX=countX-0*periodX+phaseX;  
+      if (adjCountX<0) {
+        adjCountX=adjCountX+periodX;
       }
-      else if (countX==periodX*3/4)  {
-        tridirection=1;
-        sawval=-1.0;
+      else if (adjCountX>periodX) {
+        adjCountX=adjCountX-periodX;
       }
-      else if (countX==periodX) {
-        sawval=0.0;
-        tridirection=1;
+      
+      // for a zero phase TRI to start at 0, we need to have
+      // a phase bias
+      
+      splitpt=periodX/2;
+      endpt=periodX;
+
+      if ((adjCountX>=0)&&(adjCountX<splitpt)) {
+        // oscval=1;
+        oscval=-1+trislope*adjCountX;
+//        printf("A -"); 
       }
-      else if (countX>periodX) {
-        sawval=0.0;
-        tridirection=0;
+      else if ((adjCountX>=splitpt)&&(adjCountX<=endpt)) {
+        // oscval=-1;
+        oscval=1-trislope*(adjCountX-splitpt);
+//        printf("B -"); 
+      }
+      else {
+        oscval=0;
+//        printf("C -"); 
       }
 
-      if (tridirection>0) sawval+=trislope;
-      else if (tridirection<0) sawval-=trislope;
-      oscval=sawval;
+//      printf("countX %d adjphase %d oscval %f trislope %f splitpt %d endpt %d\n"
+//             ,countX,adjCountX,oscval,trislope,splitpt,endpt);
+
     }
     
     else if (form==WF_SAW) {            // SAW
@@ -293,7 +319,7 @@ public:
         refX=x;
         periodX=int(SR/freq); 
         sawslope=2./periodX;
-        trislope=4./periodX;
+        trislope=1./periodX;
         countX=0;
       }
     }
@@ -326,6 +352,7 @@ public:
     periodX=int(SR/freq); 
     sawslope=2./periodX;
     trislope=4./periodX;
+    sawval=0;
   }
 
 };

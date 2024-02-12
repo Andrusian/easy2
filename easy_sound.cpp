@@ -142,7 +142,7 @@ void updatePeriods(void) {
   periodX=int(SR/freq);
   dutyX=int(SR/freq)*dutyThresh; 
   sawslope=2./dutyX;
-  trislope=4./dutyX;
+  trislope=2./dutyX;
   waitX=(periodX-dutyX)/2;
 }
 
@@ -414,7 +414,6 @@ void doSound (double length, bool scratch) {
   uint32_t deltaX=endX-startX;
   double lastval=0.0;
   double lastfreq=freq;
-  int tridirection=1;
 
   updatePeriods();  
   
@@ -530,7 +529,6 @@ void doSound (double length, bool scratch) {
       }
     }
 
-
     else if (form==WF_NOISE) {                // NOISE
       noiseCounter++;
       if (noiseCounter>noisePeriod) {   // noise will be influenced by freq
@@ -539,38 +537,43 @@ void doSound (double length, bool scratch) {
     }
     
     else if (form==WF_TRI) {            // TRI
-
-      // note: duty cycle gets strange on tri above values
-      // around 66%, but I'll leave it be
+      int32_t adjCountX;
+      int32_t splitpt;
+      int32_t endpt;
       
-      if (countXadj==0)  {
-        tridirection=1;
-      }  
-      else if ((countXadj)==dutyX/4)  {
-        tridirection=-1;
-        sawval=1.0;
+      // TRI does not support duty cycle
+      
+      // map countX to adjCountX while keeping it within bounds 0 to periodX
+
+      adjCountX=countX+phaseX;  
+      if (adjCountX<0) {
+        adjCountX=adjCountX+periodX;
       }
-      else if ((countXadj)==dutyX*3/4)  {
-        tridirection=1;
-        sawval=-1.0;
+      else if (adjCountX>(int) periodX) {
+        adjCountX=adjCountX-periodX;
       }
-      else if ((countXadj)==dutyX) {
-        sawval=0.0;
-        tridirection=1;
+      
+      splitpt=periodX/2;
+      endpt=periodX;
+
+      if ((adjCountX>=0)&&(adjCountX<splitpt)) {
+        // oscval=1;
+        sineval=-1+trislope*adjCountX;
+//        printf("A -"); 
       }
-      else if ((countXadj)>dutyX) {
-        sawval=0.0;
-        tridirection=0;
+      else if ((adjCountX>=splitpt)&&(adjCountX<=endpt)) {
+        // oscval=-1;
+        sineval=1-trislope*(adjCountX-splitpt);
+//        printf("B -"); 
+      }
+      else {
+        sineval=0;
+//        printf("C -"); 
       }
 
-      if (tridirection>0) {
-        sawval+=trislope;
-      }
-      else if (tridirection<0) {
-        sawval-=trislope;
-      }
-      // printf("tri: x %d direction %d trislope %f sawval %f \n", x, tridirection, trislope, sawval);
-      sineval=sawval;
+//      printf("countX %d adjphase %d oscval %f trislope %f splitpt %d endpt %d\n"
+//             ,countX,adjCountX,oscval,trislope,splitpt,endpt);
+
     }
     
     else if (form==WF_SAW) {            // SAW
