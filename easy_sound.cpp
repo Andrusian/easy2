@@ -230,7 +230,7 @@ void doSilence (double length) {
       wavout=new WaveWriter(defaultFormat*60*10,defaultFormat);
   }
 
-  std::cout << "Silence from " << masterTime << " to " << endTime << "\n";
+  std::cout << "  Silence from " << masterTime << " to " << endTime << "\n";
 
   // a silence is just like a sound but with more zeros
 
@@ -260,6 +260,8 @@ void doBoost (double length, NumberDriver *nd) {
   double endTime=masterTime+length;
   uint32_t endX=wavout->findPosition(endTime);
   int32_t newval;
+
+  std::cout << "  Boost from " << masterTime << " to " << endTime << "\n";
   
   if (endTime>wavout->maxPos) {  // limit our action to the current output range
     endX=wavout->maxPos;
@@ -303,6 +305,8 @@ void doReverb (double length, NumberDriver *amt, NumberDriver *del) {
   double endTime=masterTime+length;
   uint32_t endX=wavout->findPosition(endTime);
   int32_t val;
+
+  std::cout << "  Reverb from " << masterTime << " to " << endTime << "\n";
   
   if (endTime>wavout->maxPos) {  // limit our action to the current output range
     endX=wavout->maxPos;
@@ -367,7 +371,7 @@ void doSound (double length, bool scratch) {
   int noiseCounter=0;
   double noisePeriod=0;
 
-  std::cout << "Sound from " << masterTime << " to " << endTime << "\n";
+  std::cout << "  Sound from " << masterTime << " to " << endTime << "\n";
 
   // what if no output command was ever given?
   // initialize output buffers to default
@@ -807,7 +811,7 @@ void doMix(double length) {
   uint32_t endX=endTime*SR;
   double AM=settings.automix;
 
-  printf("doMix exammining %d to %d   ... %d\n",startX,endX,mult);
+  printf("  Mix exammining %d to %d   ... %d\n",startX,endX,mult);
 
   // first, sample the current audio
 
@@ -816,14 +820,14 @@ void doMix(double length) {
       value=wavout->getValueL(x, false);
       if (abs(value)>beforemax) {
         beforemax=abs(value);
-        printf("L beforemax: %d %d\n",x,beforemax);
+        // printf("  L beforemax: %d %d\n",x,beforemax);
       }
     }
     if (settings.right) {
       value=wavout->getValueR(x,false);
       if (abs(value)>beforemax) {
         beforemax=abs(value);
-        printf("R beforemax: %d %d\n",x,beforemax);
+        //       printf("  R beforemax: %d %d\n",x,beforemax);
       }
     }
   }
@@ -837,28 +841,28 @@ void doMix(double length) {
       value=wavout->getValueL(x, true);
       if (abs(value)>newmax) {
         newmax=abs(value);
-        printf("L newmax: %d %d\n",x,newmax);
+//        printf("  L newmax: %d %d\n",x,newmax);
       }
     }
     if (settings.right) {
       value=wavout->getValueR(x,true);
       if (abs(value)>newmax) {
         newmax=abs(value);
-        printf("R newmax: %d %d\n",x,newmax);
+//        printf("  R newmax: %d %d\n",x,newmax);
       }
     }
   }
   
   newmaxPct=newmax/double(mult);
 
-  printf("beforemax: %f  newmax: %f\n",beforemaxPct,newmaxPct);
+//  printf("  beforemax: %f  newmax: %f\n",beforemaxPct,newmaxPct);
 
   // so working out the 2 new ratios for mixing...
   
   double mixNew=AM*newmaxPct/(newmaxPct+beforemaxPct);
   double mixBefore=beforemaxPct/(newmaxPct+beforemaxPct);
 
-  printf("new/old mix ratio: %f %f\n",mixNew,mixBefore);
+  printf("  new/old mix ratio: %f %f\n",mixNew,mixBefore);
 
   // do the mix, finally!
 

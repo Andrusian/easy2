@@ -9,7 +9,7 @@
 "#".*                { /* DO NOTHING */; }
 [\t ]+              /* ignore whitespace */
 
-[_][\r\n]            { }
+ /* [_][\r\n]            { } */
 [\r\n]+              {lineNumber++;processCommands(); }
 
  /* to is necessary to resolve the problem of negatives in arg lists */
@@ -142,7 +142,7 @@ exit                 {push(EXIT,0,NULL); }
 
 \"[a-zA-Z0-9_\+\-]+"."[a-zA-Z0-9_]+\" {push(FILENAME,0,(char *) doFilename(yytext)); }
 
-[a-zA-Z][a-zA-Z0-9_]* {push(STRING,0,strdup(yytext)); }  // note: must start with a letter
+[a-zA-Z][a-zA-Z0-9_]* {push(STRING,NO_NUMBER,strdup(yytext)); }  // note: must start with a letter
 
  /* note that negative and positive are handled above in plus/minus */
 

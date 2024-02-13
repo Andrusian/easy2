@@ -118,7 +118,7 @@ extern "C" {
   extern int flag48;
   FILE * copyyyin;
   const char * copyinfile;
-  int linecount;
+  int linecount;      // two different ways
   int lineNumber=0;
 }
 
@@ -633,7 +633,7 @@ void doAssignment (node * start) {
 // TODO: add a line number to this
 
 void syntaxError (node * cur,const char * str) {
-  printf("line number %d - error: %s\n",lineNumber,str);
+  printf("ERROR - line number %d - %s\n",lineNumber,str);
   exit(1);
 }
 
@@ -858,6 +858,11 @@ NumberDriver * CheckRight (node * n) {
 
   if (right->dtype==STRING) {
     float val=right->value;
+    if (val==NO_NUMBER) {
+      printf("ERROR - Line %d - The string '%s' wasn't defined so can't be used as a number.\n",lineNumber,right->str);
+      exit(2); 
+    }
+    
     Value * nd=new Value(val);
     return nd;
   }
@@ -1075,7 +1080,7 @@ void processCommands (void) {
   
   copySettings();
 
-  printf("line %d ",lineNumber);
+  printf("line %d\n",lineNumber);
   // printf("  before swapVariables... \n");
   
   // displayForward();
@@ -1126,7 +1131,7 @@ void processCommands (void) {
   
   if ((ass=isAssignment())!=NULL) {
     doAssignment(ass);
-    listVariables();
+    // listVariables();
   }
   else {
 
@@ -1219,7 +1224,7 @@ void finish(void) {
     printf("Output automatically set to %s\n",outputFile);
   }
   
-  printf ("writing file %s\n",outputFile);
+  printf ("Writing file %s\n",outputFile);
   
   wavout->writeFile(outputFile);
   doMp3(outputFile,copyinfile);
@@ -1519,7 +1524,7 @@ void doMath2 (void) {
       }
       
       result=(left->value+right->value); // so math op with left and right operands
-      printf("      result: %lf\n",result);
+      // printf("      result: %lf\n",result);
       
       replaceNode(left,NUMBER,result,NULL);  // put answer in LEFT node
 
@@ -1542,7 +1547,7 @@ void doMath2 (void) {
       }
 
       result=(left->value-right->value); // so math op with left and right operands
-      printf("      result: %lf\n",result);
+      // printf("      result: %lf\n",result);
       
       replaceNode(left,NUMBER,result,NULL);  // put answer in LEFT node
 
@@ -1648,7 +1653,7 @@ void doStuff(void) {
 
   //displayForward();
   //displayBackward();
-  
+
   cur=elist;
 
   // navigate from end to beginning of list
