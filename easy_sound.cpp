@@ -23,6 +23,8 @@
 //
 //
 
+#define LOW_FREQ_LIMIT 30
+
 extern "C" {
   #include "easy_code.h"
 }
@@ -472,6 +474,19 @@ void doSound (double length, bool scratch) {
     double vol3=abs(settings.vol3->getValue(x));
     double freq2=abs(settings.freq2->getValue(x));
     double freq3=abs(settings.freq3->getValue(x));
+
+    if ((vol>0) && (freq<LOW_FREQ_LIMIT)) {
+      printf("Error - freq %fHz below low safety limit of %d\n", freq, LOW_FREQ_LIMIT);
+      exit(2);
+    }
+    if ((vol2>0) && (freq2<LOW_FREQ_LIMIT)) {
+      printf("Error - freq2 %fHz below low safety limit of %d\n", freq2, LOW_FREQ_LIMIT);
+      exit(2);
+    }
+    if ((vol3>0)&& (freq3<LOW_FREQ_LIMIT)) {
+      printf("Error - freq3 %fHz below low safety limit of %d\n", freq3, LOW_FREQ_LIMIT);
+      exit(2);
+    }
     
     // balance volume modifier... this is independent
     // of right/left enable. e.g. bal=1 with both enabled means signal entirely
