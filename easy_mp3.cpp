@@ -29,6 +29,7 @@ extern "C" {
   #include <stdio.h>
   #include <stdlib.h>
   extern int flag48;
+  #include "easy_code.h"
 }
 
 const char * lame="/usr/bin/lame";
@@ -73,6 +74,8 @@ void doMp3(const char * infile, const char * songname) {
   
   pid=fork();
   if (pid ==0) {
+    printf(CYN);
+    // printf(BLINK);
     if (flag48) {
       printf("Converting %s to %s\n",infile,outfile2);
       execl(ffmpeg,ffmpeg,"-hide_banner","-loglevel","error","-y","-i",infile,"-q:a","9",outfile2,NULL);
@@ -84,12 +87,15 @@ void doMp3(const char * infile, const char * songname) {
       execl(ffmpeg,ffmpeg,"-hide_banner","-loglevel","error","-y","-i",infile,"-codec:a","libmp3lame","-q:a","1",outfile,NULL);
       
     }
-    
+    printf(WHT);
+    printf(RESET);
+
     exit(0);
+    
   }
   waitpid(pid,&dc,0);
 
-  printf("Complete\n");
+  printf("%sComplete\n%s",BLU,WHT);
 
   return;
 }

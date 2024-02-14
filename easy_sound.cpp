@@ -230,7 +230,7 @@ void doSilence (double length) {
       wavout=new WaveWriter(defaultFormat*60*10,defaultFormat);
   }
 
-  std::cout << "  Silence from " << masterTime << " to " << endTime << "\n";
+  std::cout << MAG << "  Silence from " << masterTime << " to " << endTime << "\n" << WHT;
 
   // a silence is just like a sound but with more zeros
 
@@ -260,35 +260,40 @@ void doBoost (double length, NumberDriver *nd) {
   double endTime=masterTime+length;
   uint32_t endX=wavout->findPosition(endTime);
   int32_t newval;
-
-  std::cout << "  Boost from " << masterTime << " to " << endTime << "\n";
+  
+  
+  std::cout << MAG << "  Boost from " << masterTime << " to " << endTime << "\n" << WHT;
   
   if (endTime>wavout->maxPos) {  // limit our action to the current output range
     endX=wavout->maxPos;
   }
 
   nd->init(0);
+  soundLengthX=length*SR;  // needed for shape and ramp which can repeat
+  settings.shape->init(soundLengthX); // boost can also use shape now
   
   // left / right settings apply, as usual
   
   uint32_t countX=0;
   for (uint32_t x=startX;x<endX;x++) {
     double multiplier=nd->getValue(countX);           // multiplier can vary!
+    double shapevol=settings.shape->getValue(countX);
+    double volnet=shapevol*multiplier;
       
     if (settings.left) {
       // printf("val: %d\n",wavout->getValueL(x,false));
-      newval=wavout->getValueL(x,false)*multiplier;  // get numbber and make it bigger
+      newval=wavout->getValueL(x,false)*volnet;  // get numbber and make it bigger
       // printf("newval: %d\n",newval);
       wavout->setValueL(x,newval,false);             // write it back same spot
     }
     if (settings.right) {
-      newval=wavout->getValueR(x,false)*multiplier;
+      newval=wavout->getValueR(x,false)*volnet;
       wavout->setValueR(x,newval,false);
     }
     countX++;
+    // printf("volnet: %f\n",volnet);
   }
 }
-
 
 //----------------------------------------------------------------------
 // Reverb does a reverb effect, or with a large delay, an echo.
@@ -306,7 +311,7 @@ void doReverb (double length, NumberDriver *amt, NumberDriver *del) {
   uint32_t endX=wavout->findPosition(endTime);
   int32_t val;
 
-  std::cout << "  Reverb from " << masterTime << " to " << endTime << "\n";
+  std::cout << MAG << "  Reverb from " << masterTime << " to " << endTime << "\n" << WHT;
   
   if (endTime>wavout->maxPos) {  // limit our action to the current output range
     endX=wavout->maxPos;
@@ -371,7 +376,7 @@ void doSound (double length, bool scratch) {
   int noiseCounter=0;
   double noisePeriod=0;
 
-  std::cout << "  Sound from " << masterTime << " to " << endTime << "\n";
+  std::cout << MAG << "  Sound from " << masterTime << " to " << endTime << "\n" << WHT;
 
   // what if no output command was ever given?
   // initialize output buffers to default
@@ -480,15 +485,15 @@ void doSound (double length, bool scratch) {
     double freq3=abs(settings.freq3->getValue(x));
 
     if ((vol>0) && (freq<LOW_FREQ_LIMIT)) {
-      printf("Error - freq %fHz below low safety limit of %d\n", freq, LOW_FREQ_LIMIT);
+      printf("%sError - freq %fHz below low safety limit of %d\n%s",RED,freq, LOW_FREQ_LIMIT,WHT);
       exit(2);
     }
     if ((vol2>0) && (freq2<LOW_FREQ_LIMIT)) {
-      printf("Error - freq2 %fHz below low safety limit of %d\n", freq2, LOW_FREQ_LIMIT);
+      printf("%sError - freq2 %fHz below low safety limit of %d\n%s",RED, freq2, LOW_FREQ_LIMIT,WHT);
       exit(2);
     }
     if ((vol3>0)&& (freq3<LOW_FREQ_LIMIT)) {
-      printf("Error - freq3 %fHz below low safety limit of %d\n", freq3, LOW_FREQ_LIMIT);
+      printf("%sError - freq3 %fHz below low safety limit of %d\n%s",RED, freq3, LOW_FREQ_LIMIT,WHT);
       exit(2);
     }
     
@@ -811,7 +816,7 @@ void doMix(double length) {
   uint32_t endX=endTime*SR;
   double AM=settings.automix;
 
-  printf("  Mix exammining %d to %d   ... %d\n",startX,endX,mult);
+  printf("%s  Mix exammining %d to %d   ... %d\n%s",MAG,startX,endX,mult,WHT);
 
   // first, sample the current audio
 
@@ -862,7 +867,7 @@ void doMix(double length) {
   double mixNew=AM*newmaxPct/(newmaxPct+beforemaxPct);
   double mixBefore=beforemaxPct/(newmaxPct+beforemaxPct);
 
-  printf("  new/old mix ratio: %f %f\n",mixNew,mixBefore);
+  printf("%s  new/old mix ratio: %f %f\n%s",MAG,mixNew,mixBefore,WHT);
 
   // do the mix, finally!
 

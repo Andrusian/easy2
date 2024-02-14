@@ -633,7 +633,7 @@ void doAssignment (node * start) {
 // TODO: add a line number to this
 
 void syntaxError (node * cur,const char * str) {
-  printf("ERROR - line number %d - %s\n",lineNumber,str);
+  printf("%sERROR - line number %d - %s\n%s",RED,lineNumber,str,WHT);
   exit(1);
 }
 
@@ -706,12 +706,12 @@ void init (void) {
   if (flag48!=0) {
     wavout=new WaveWriter(48000*60*60*2.5,48000);
     SR=48000;
-    printf("Output format is 48kHz, 24 bit .wav\n");
+    printf("%sOutput format is 48kHz, 24 bit .wav\n%s",MAG,WHT);
   }
   else {
     wavout=new WaveWriter(44100*60*60*2.5,44100);
     SR=44100;
-    printf("Output format is 44.1kHz, 16 bit .wav\n");
+    printf("%sOutput format is 44.1kHz, 16 bit .wav\n%s",MAG,WHT);
   }
 }
 
@@ -859,7 +859,7 @@ NumberDriver * CheckRight (node * n) {
   if (right->dtype==STRING) {
     float val=right->value;
     if (val==NO_NUMBER) {
-      printf("ERROR - Line %d - The string '%s' wasn't defined so can't be used as a number.\n",lineNumber,right->str);
+      printf("%s ERROR - Line %d - The string '%s' wasn't defined so can't be used as a number.\n%s",RED,lineNumber,right->str,WHT);
       exit(2); 
     }
     
@@ -1209,7 +1209,7 @@ void finish(void) {
 
     // auto generate filename from infile if not specified
     
-    printf("Infile was %s\n",copyinfile);
+    printf("%sInfile was %s\n%s",CYN,copyinfile,CYN);
     outputFile=strdup(copyinfile);
     char * location=strcasestr(outputFile,".e2");
     if (location==NULL) {
@@ -1221,10 +1221,10 @@ void finish(void) {
     location++;  *location='v';
     location++;  *location='\0';
 
-    printf("Output automatically set to %s\n",outputFile);
+    printf("%s Output automatically set to %s %s\n",CYN,outputFile,WHT);
   }
   
-  printf ("Writing file %s\n",outputFile);
+  printf ("%s Writing file %s%s\n",CYN,outputFile,WHT);
   
   wavout->writeFile(outputFile);
   doMp3(outputFile,copyinfile);
@@ -1668,7 +1668,7 @@ void doStuff(void) {
     // am argument
     
     if (cur->dtype==EXIT) {
-      printf("cmd: exit --- COMMAND TO EXITING EARLY!\n");
+      printf("%scmd: exit --- COMMAND TO EXITING EARLY!\n%s",YEL,WHT);
       finish();
       exit(0);
     }
@@ -1755,11 +1755,11 @@ void doStuff(void) {
       printf("cmd: time\n");
       double targetTime=NumberRight(cur);
       if (targetTime==NO_NUMBER) syntaxError(cur,"Need a time in sec.\n");
-      printf("Going to time %f\n",targetTime);
+      printf("%s Going to time %.1f %s\n",GRN,targetTime,WHT);
       masterTime=targetTime;
     }
     else if (cur->dtype==ADDTIME) {                
-      printf("cmd: addtime\n");
+      printf("cmd: %saddtime%s\n",GRN,WHT);
       double targetTime=NumberRight(cur);
       if (targetTime==NO_NUMBER) syntaxError(cur,"Need a time to add in sec.\n");
       if ((masterTime+targetTime)>0.) {           // targetTime can be -ve
@@ -1768,7 +1768,7 @@ void doStuff(void) {
       else {
         masterTime=0.0;
       }
-      printf("Adding %f to time = %f\n",targetTime,masterTime);
+      printf("%sAdding %f to time = %f\n%s",GRN,targetTime,masterTime,WHT);
     }
     else if (cur->dtype==AUTOMIX) {                
       settings.automix=NumberRight(cur);
@@ -1777,13 +1777,13 @@ void doStuff(void) {
       }
     }
     else if (cur->dtype==REWIND) {                 // rewind time
-      printf("cmd: rewind\n");
+      printf("cmd: %srewind%s\n",GRN,WHT);
       int steps=int(NumberRight(cur));
       if (steps==NO_NUMBER) {
         steps=1;
       }
 
-      printf("cmd debug: rewind %d %ld %f\n",steps,rewindHistory.size(),masterTime);
+      // printf("cmd debug: rewind %d %ld %f\n",steps,rewindHistory.size(),masterTime);
 
       if ((rewindHistory.size()-1)<1) {
         // syntaxError(NULL,"can't rewind before 0 time\n");
@@ -1795,11 +1795,11 @@ void doStuff(void) {
       else {
         for (int i=1; i<steps; i++) {
           masterTime=rewindHistory.top();
-          printf("rewind debug skipping %f \n",masterTime);
+          // printf("rewind debug skipping %f \n",masterTime);
           rewindHistory.pop();
         }
         masterTime=rewindHistory.top();
-        printf("rewinding to time %f \n",masterTime);
+        printf("%srewinding to time %f \n%s",GRN,masterTime,WHT);
       }
     }
 
@@ -1870,7 +1870,7 @@ void doStuff(void) {
     // 
     // shapes are NOT retained in settings from line to line
       
-    else if ((cur->dtype>=SH_TEASE1)&&(cur->dtype<=SH_REV3)) {              // shape 
+    else if ((cur->dtype>=SH_TEASE1)&&(cur->dtype<=LASTSHAPE)) {              // shape 
       printf("cmd: shape\n");
       
       // handle the optional arg

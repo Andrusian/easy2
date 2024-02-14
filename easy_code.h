@@ -134,6 +134,18 @@ void displayForward();
 #define SH_WEDGE2 2020
 #define SH_GAP1 2021
 #define SH_GAP2 2022
+#define LASTSHAPE 2022
+
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YEL "\e[0;33m"
+#define BLU "\e[0;34m"
+#define MAG "\e[0;35m"
+#define CYN "\e[0;36m"
+#define WHT "\e[0;37m"
+#define BLINK "\033[5m"
+#define RESET "\033[0m"
+
 
 #define NO_NUMBER -9999999
 

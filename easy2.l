@@ -170,7 +170,7 @@ int main(int argc, char * argv[]) {
   FILE *infile=NULL;
   int i;
 
-  printf("EASY2: audio generator\n");
+  printf("%sEASY2: audio generator\n%s",CYN,WHT);
   linecount=0;
 
   if (argc>1) {
@@ -189,22 +189,22 @@ int main(int argc, char * argv[]) {
         // make sure it's valid:
 
         if (!infile) {
-          printf ("\nERROR: unable to open file: %s\n\n",argv[1]);
+          printf ("\n%sERROR: unable to open file: %s\n\n%s",RED,argv[1],WHT);
           return -1;
         }
         copyinfile=malloc(strlen((char *) argv[i])+3);  /* extra character */
         strcpy((char *)copyinfile,(char *) argv[i]);
         copyinfile[strlen((char *) argv[i])]='\0';
-        printf("Processing input file: %s\n",argv[i]);
+        printf("Processing input file: %s%s%s\n",CYN,argv[i],WHT);
       }
     }
   }
 
   if (infile==NULL) {
-    printf("error: need to provide a script filename to process.\n");
+    printf("%serror: need to provide a script filename to process.\n",RED);
     printf("\n\nusage: %s [scriptfile] [-48]\n",argv[0]);
     printf("           scriptfile is a .e2 set of commands\n");
-    printf("           48 sets output to 48kHz format\n");
+    printf("           48 sets output to 48kHz format\n%s",WHT);
     exit(0);
   }
 

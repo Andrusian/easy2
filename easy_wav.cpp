@@ -29,6 +29,7 @@
 extern "C" {
 #include "stdint.h"
 #include "math.h"
+#include "easy_code.h"
 };
 
 #include "easy_wav.hpp"
@@ -92,7 +93,7 @@ int WaveWriter::writeFile (char * filename) {
 
     out.write(reinterpret_cast<const char *>(&wav), sizeof(wav));
 
-    printf("writing: %6.2fMB memory, %d samples, %d seconds or %f minutes\n",(maxPos*4/1024./1024.),maxPos,maxPos/sr,maxPos/sr/60.);
+    printf("%s  writing: %6.2fMB memory, %d samples, %d seconds or %f minutes\n%s",MAG,(maxPos*4/1024./1024.),maxPos,maxPos/sr,maxPos/sr/60.,WHT);
 
     for (uint32_t i = 0; i < maxPos; ++i) {
       out.write((const char *) &(data16L[i]), 2);
