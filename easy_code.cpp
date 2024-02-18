@@ -118,7 +118,6 @@ extern "C" {
   extern int flag48;
   FILE * copyyyin;
   const char * copyinfile;
-  int linecount;      // two different ways
   int lineNumber=0;
 }
 
@@ -130,10 +129,8 @@ using namespace std;
 void doMath0 (void);
 void doMath1 (void);
 void doMath2 (void);
-node * isAssignment(void);
 void doAssignment ();
-bool isNumerical(void);
-const char * GetVarname(void);
+bool isNumerical(node *);
 void listVariables(void);
 bool swapVariables(void);
 void replaceMacro(node * spot, node *nodes);
@@ -146,6 +143,7 @@ bool loadSeq(node * n, Seq * , Ramps *);
 node * GetLeft (node * center);
 node * GetRight (node * center);
 const char * debug_type (int dtype);
+void scanForAssignments(void);
 
 // these are over in easy_sound...
 
@@ -444,6 +442,7 @@ void Shape::loadTable(void) {
 
 map<string,int> variables;
 map<string,float> varValues;
+map<string,int> varLines;
 map<string,node *> varNodes;
 map<string,long> varFilepos;
 
@@ -516,35 +515,78 @@ void replaceMacro(node * spot, node *nodes) {
   // handling of special edge cases
 }
 
+//----------------------------------------------------------------------
+// Finds the SYMBOL that is the target of a loop.
+//
+// In this case, easiest way is to match the 'loop ' at the front. There must be
+// at least one space as per the lex rules.
+//
+// Note: this same method doesn't work for assignments.
+
+char * loopvar(char *in) {
+  /* find loop and the space after */
+
+  char * spot=strstr(in, (char *) "loop ");
+  if (spot!=NULL) {
+    spot=spot+5;  // what we want is after this...
+  }
+  else {
+    printf("DEBUG: did not find word loop in loop command\n");
+    exit(2);
+  }
+
+  char *cpy=strdup(spot);
+  printf("DEBUG loop to: %s\n",cpy);
+  return strdup(cpy);
+}
+
 //--------------------------------------------------
 // this routine does the substituion of either
 // a value (simple) or a macro (a string of nodes inserted)
 //
-// it needs to pass "false" to indicate nothing found
-// to handle variables-within-variables. Once it passes
-// false, there should be no strings left on the line
+// Here is the problem: if we process this end-to-begining
+// we'll have problems with the loop command since we
+// hit the command 'loop' after we've processed it's target label.
+// But, if we process this begining-to-end we'll have problems
+// with assignment because the assignment variable will be swapped
+// before the equal sign is found.
+//
+// So there are a couple ways to solve this:
+// 1) interate each wasy before hand looking for '=' or
+//    'loop' and change the STRING into a different
+//     datatype so it does not get processed.
+//
+//     This will fail if you tried to do an assignment in the middle
+//     of a repeat command or something else strange.
+// OR
+//
+// 2) change the lexer so 'loop string' and 'string =' are stored
+//    together. This should be possible without altering the data
+//    structure.
+//
+//    Seems like the more elegant way.
+//
+// Order-of-processing is very important both in the lexer and in
+// the order in this file.
+
 
 bool swapVariables(void) {
   int count=0;
   bool found=false;
-  bool loopFlag=false;   // swaps are disabled after loop commands
   
-   //start from the begn
-   struct node *ptr = begn;
+   //start from the end
+   struct node *ptr = elist;
    // displayBackward();
 	
-   while ((ptr != NULL)&&(loopFlag==false)) {
+   while (ptr != NULL) {
      count++;
 
-     if (ptr->dtype==LOOP) {
-       loopFlag=true;
-     }
-     else if (ptr->dtype==STRING) {
+     if (ptr->dtype==STRING) {   // detect the name of the SYMBOL
        string name=string(ptr->str);
        
        if (variables.find(name)!=variables.end()) {
          int type=variables[name];
-         if (type==V_FLOAT) {
+         if (type==V_FLOAT) {          // is replacement a float?
            if (ptr->filled==false) {
              // cout << name << " is a float\n";
              found=true;               // did a substitution
@@ -553,6 +595,7 @@ bool swapVariables(void) {
              // the value of the variable
 
              ptr->value=varValues[name];  // change datatype
+             //printf("DEBUG: %s was defined as %f at line %d\n",name.c_str(),varValues[name],varLines[name]);
              ptr->dtype=NUMBER;          // and fill in number
 
               // flag that this variable was populated with a number
@@ -572,46 +615,40 @@ bool swapVariables(void) {
            return true;
          }
        }
-       else {
-         // note: will probably need to do something about the left-hand
-         // side of assignments
-
-       }
      }
      
      //move to lft item
-     ptr = ptr ->rght;
+     ptr = ptr ->lft;
    }
    return found;
 }
 
 
 //----------------------------------------------------------------------
-// start is either the node that has the value
-// or the start of the macro string
 //
+// The information for the assignment is now all in the = node (start).
 
-void doAssignment (node * start) {
-  const char * varname;
-  node * rightside;
-  rightside=start->rght;
+void doAssignment (node * ass) {
+  printf("    debug: assignment varname is %s\n",ass->str);
+  // displayForward();
 
-  varname=GetVarname();
-  string varnameStr=string(varname);
-
-  // printf("    debug: assignment varname is %s\n",varname);
-
-  if (isNumerical()) {
-    // printf("    debug: storing numerican variable %s\n",varname);
+  string varnameStr=string(ass->str);
+  node *rightside=ass->rght;
+  
+  if (isNumerical(rightside)) {
     if (variables.find(varnameStr) != variables.end()) {
-      //found: modify existing
+      printf("DEBUG: modifying numeric variable %s at line %d \n",varnameStr.c_str(),lineNumber);
+      printf("found: modify existing %s\n",varnameStr.c_str());
       variables[varnameStr]=V_FLOAT;
       varValues[varnameStr]=rightside->value;
+      varLines[varnameStr]=lineNumber;
     }
     else {
       // not found: add new entry
+      printf("DEBUG: storing new numeric variable %s at line %d \n",varnameStr.c_str(),lineNumber);
       variables.insert({varnameStr,V_FLOAT});
       varValues.insert({varnameStr,rightside->value});
+      varLines.insert({varnameStr,lineNumber});
     }
   }
   else {
@@ -1075,15 +1112,17 @@ double NumberRight (node * n) {
 // until there is nothing left to process.
 
 void processCommands (void) {
-  node * ass;
   updateDefaults=true;
   
   copySettings();
 
   printf("line %d\n",lineNumber);
-  // printf("  before swapVariables... \n");
-  
   // displayForward();
+
+  // printf("  before swapVariables... \n");
+
+  scanForAssignments();      // pre-process any assignments
+  
   // displayBackward();
   
   // swap variables into line
@@ -1093,7 +1132,7 @@ void processCommands (void) {
   // printf("  after swapVariables... \n");
 
   // displayForward();
-  // displayBackward();
+   // displayBackward();
   
   // printf("  before math0\n");
 
@@ -1115,37 +1154,8 @@ void processCommands (void) {
   doMath2();           // adding and subtracting
 
   // printf("  after math2 \n");
-
-  // at this point, we are down to two types of commands:
-  // 1. a line that does something now like set
-  //     a setting or make a sound
-  // 2. a line that results in an assignment
-  //
-  // At this point, since the math is done, we need
-  // do work out which this is.
-  // Assigments will not result in further processing.
-  // Whereas case (1) gets processed.
-  //
-  // This, in effect, defers procssing of various settings
-  // until the sound is formed.
   
-  if ((ass=isAssignment())!=NULL) {
-    doAssignment(ass);
-    // listVariables();
-  }
-  else {
-
-    // do repeats and process remainder of line
-
-    // TODO: experimennt with moving this up
-    // so it surrounds the entire line's processing
-    // that way, math commands will be repeatedly
-    // processed. Writing this, I don't think
-    // that will really work because assignments
-    // and actions don't mix on one line.
-    
-    lookForRepeat();
-  }
+  lookForRepeat();
 
   if (updateDefaults) {
     // printf("updating defaults line %d\n",lineNumber);
@@ -1229,56 +1239,62 @@ void finish(void) {
   wavout->writeFile(outputFile);
   doMp3(outputFile,copyinfile);
 }
-
 //----------------------------------------------------------------------
-// isAssignment looks for the first operator
-// it finds on the line. If it is an assignment, then this line
-// must involve some sort of assignment. It should normally be found
-// at 2nd position after the label name.
+// We're looking for nodes STRING,= in that order.
+// If we find it, we turn the STRING into a NOOP
+// and we store the contents of the STRING in the = node.
+//
+// This causes the STRING not to be swapped if it is being redefined.
+// In theory, we should be able to do this in LEX but it prefers to
+// match the STRING alone.
+//
+// We can't process the ASSIGNMENT yet because the other nodes
+// haven't been fully swapped yet.
+//
+void scanForAssignments(void) {
 
-node * isAssignment(void) {
-  int count=0;
-  node *cur;
-  
-  for (cur=begn; (cur!=NULL)&&(count<=2); cur=cur->rght) {
-    count++;
+  //start from the begn
+  node *ptr = begn;
+  bool foundString=false;
+  node *found=NULL;
+	
+  while(ptr != NULL) {
+
+    if (ptr->dtype==STRING) {
+      foundString=true;
+      found=ptr;
+    }
+    else if ((ptr->dtype==ASSIGNMENT)&&(foundString)) {
+      found->dtype=ASSIGNLHS;   // disable the STRING
+      ptr->str=found->str;      // copy STRING into = sign
+      foundString=false;
+      printf("DEBUG: stored %s in '='\n",ptr->str);
+    }
+    else {
+      foundString=false;
+    }
     
-    if (cur->dtype==ASSIGNMENT) {
-      if (count!=2) {
-        printf("info: unusual, assignment wasn't at position 2");
-      }
-      return cur;
-    }
-    else if ((cur->dtype>=0)&&(cur->dtype<100)) {
-      // so, first thing found doesn't qualify this as an assignment
-      return NULL;
-    }
-    // should be a string at position 0
+    //move to rght item
+     ptr = ptr ->rght;
   }
-
-  return NULL;
 }
 
 //----------------------------------------------------------------------
-// isNumerical looks for a purely
-// mathematical calculation - this will result in a NUMBER at position
-// 3
+// isNumerical looks number at node given
 
-bool isNumerical(void) {
-  int count=0;
-  node * cur;
-  
-  for (cur=begn; (cur!=NULL)&&(count<=3); cur=cur->rght) {
-    count++;
-    
-    if ((count==3)&&(cur->dtype==NUMBER)) {
-      return true;
-    }
+bool isNumerical(node * right) {
+
+  if (right==NULL) {
+    syntaxError(right,"Missing right hand side of assignment.\n");
+  }
+
+  if (right->dtype==NUMBER) {
+    return true;
   }
   return false;
 }
 
-//----------------------------------------------------------------------
+//-------------------------------------d---------------------------------
 // Loads a table of values for either a Seq or a Ramps
 //
 // This code should work for either. Didn't really want to cut-paste it
@@ -1356,21 +1372,6 @@ bool loadSeq(node * n, Seq * seq, Ramps *rmp) {
 }
 
 //----------------------------------------------------------------------
-// returns the variable name for an assignment
-//
-// this should always be found at the first part of the line
-// which is the begn step
-
-const char * GetVarname(void) {
-  if (begn!=NULL) {
-    if (begn->dtype==STRING) {
-      return begn->str;
-    }
-  }
-  return NULL;
-}
-
-//----------------------------------------------------------------------
 // This handles an ambiguity between positive and plus and negative and minus.
 //
 // How?
@@ -1433,6 +1434,7 @@ void doMath1 (void) {
   for (cur=begn; cur!=NULL; cur=cur->rght) {
     double result;
     if (cur->dtype==MULT) {
+      printf("cmd: *\n");
       left=GetLeft(cur);
       right=GetRight(cur);
 
@@ -1452,6 +1454,7 @@ void doMath1 (void) {
       cur=left;                             // this will make for() work
     }
     else if (cur->dtype==DIV) {
+      printf("cmd: /\n");
       left=GetLeft(cur);
       right=GetRight(cur);
 
@@ -1475,6 +1478,7 @@ void doMath1 (void) {
       cur=left;                             // this will make for() work
     }
     else if (cur->dtype==MODULUS) {
+      printf("cmd: %%\n");
       left=GetLeft(cur);
       right=GetRight(cur);
 
@@ -1513,6 +1517,7 @@ void doMath2 (void) {
     // displayNode(cur);
     double result;
     if (cur->dtype==PLUS) {
+      printf("cmd: +\n");
       left=GetLeft(cur);
       right=GetRight(cur);
 
@@ -1535,6 +1540,7 @@ void doMath2 (void) {
       cur=left;                             // this will make for() work
     }
     else if (cur->dtype==MINUS) {
+      printf("cmd: -\n");
       left=GetLeft(cur);
       right=GetRight(cur);
 
@@ -1672,7 +1678,10 @@ void doStuff(void) {
       finish();
       exit(0);
     }
-    if (cur->dtype==TIMESTAMP) {
+    else if (cur->dtype==ASSIGNMENT) {
+      doAssignment(cur);
+    }    
+    else if (cur->dtype==TIMESTAMP) {
       convertTimeStampToNumber(cur);
     }
     else if (cur->dtype==FREQ) {                
@@ -1810,18 +1819,23 @@ void doStuff(void) {
     // These each take no arguments.
 
     else if (cur->dtype==FADEIN) {              
+      printf("cmd: fadein\n");
       settings.fadein=NumberRight(cur);
     }
     else if (cur->dtype==CIRCUIT) {             
+      printf("cmd: circuit\n");
       settings.circuit=true;
     }
     else if (cur->dtype==NOCIRCUIT) {           
+      printf("cmd: nocircuit\n");
       settings.circuit=false;
     }
     else if (cur->dtype==MANUALMIX) {           
+      printf("cmd: manualmix\n");
       settings.automix=1000.;
     }
     else if (cur->dtype==FADEOUT) {             
+      printf("cmd: fadeout\n");
       settings.fadeout=NumberRight(cur);
     }
     else if (cur->dtype==RIGHT) {               
@@ -2146,37 +2160,23 @@ void doStuff(void) {
     else if (cur->dtype==LOOP) {
       printf("cmd: loop\n");
 
-      // a bit of a hack, and an excuse:
-      //
-      // lex seems to read in the entire file at once and then
-      // parse it. As such, looking at position of yyin at any
-      // point always show it at the end. An attempt was made
-      // to store the file position at each opcode but this
-      // turned out to be always the end of file... plus some.
-      //
-      // Easiest way is to rewind the file the file and scan
-      // through for the loop label. It gets the job done simply
-      // without exessively complicating things. Don't hate on me.
-      //
-      // This does have a functional implication. Using this
-      // method will find the first label= string in the script.
-      // If we were able to store position, that would find the
-      // last label= usage in the script if there was somehow
-      // more than one.
+      // rewrite: with the storage of STRING it also
+      // stores the line number where it was last defined
+      // the target of the loop is the line following that
       
-       char * destination=StringRight(cur);
-       if (destination==NULL) {
-          syntaxError(cur,"Looping to  what label?\n");
-       }
-       printf("cmd: loop to %s\n",destination);
+      char * destination=cur->str;
+      if (destination==NULL) {
+        syntaxError(cur,"Looping to  what label?\n");
+      }
+      double counterValue=varValues[destination];
+      counterValue=counterValue-1.0;     // decrement loop counter
+      int lineTarget=varLines[destination];   // line target
+      
+      printf("cmd: loop to %s at line %d counter dec to %f\n",destination,lineTarget,counterValue);
 
-       double counterValue=varValues[destination];
-
-       counterValue=counterValue-1.0;  // decrement loop counter
-
-       // test the loop condition >=1
+      // test the loop condition >=1
        
-       if (counterValue>=1.0) {
+      if (counterValue>=1.0) {
 
          // yes - we are doing the loop
          
@@ -2195,8 +2195,7 @@ void doStuff(void) {
          while (!feof(copyyyin)) {
            fgets(buffer,4093,copyyyin);
            lineNumber++;
-           if ((strncmp(buffer,search1.c_str(),search1.length())==0)||
-               (strncmp(buffer,search2.c_str(),search2.length())==0)) {
+           if (lineNumber==lineTarget) {
              printf("found! %d \n",lineNumber);
 
              // input file should be positioned properly to
@@ -2211,7 +2210,7 @@ void doStuff(void) {
          printf("Error: loop counter '%s=' not found.\n",destination);
          fclose(copyyyin);
          exit(0);
-       }
+      }
 
        // counter at zero... so do nothing continue on
     }

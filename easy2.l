@@ -6,11 +6,11 @@
 %}
 
 %%
+
 "#".*                { /* DO NOTHING */; }
 [\t ]+              /* ignore whitespace */
 
- /* [_][\r\n]            { } */
-[\r\n]+              {lineNumber++;processCommands(); }
+\n                  {lineNumber++;processCommands(); }
 
  /* to is necessary to resolve the problem of negatives in arg lists */
 
@@ -116,9 +116,9 @@ gap2                   {push(SH_GAP2,0,NULL); }
 
  /* flow control */
 
-repeat               {push(REPEAT,0,NULL); }
-loop                 {push(LOOP,0,NULL); }
-exit                 {push(EXIT,0,NULL); }
+repeat                                        {push(REPEAT,0,NULL); }
+loop[ ]+[a-zA-Z][a-zA-Z0-9_]*                 {push(LOOP,0,loopvar(strdup(yytext))); }
+exit                                          {push(EXIT,0,NULL); }
 
  /* time stamps */
 
@@ -138,11 +138,12 @@ exit                 {push(EXIT,0,NULL); }
 "/"                  {push(DIV,0,NULL);}
 [%][%]               {push(MODULUS,0,NULL);}
 
-[=]                  {push(ASSIGNMENT,0,NULL); }
+
+[=]                  {push(ASSIGNMENT,0,NULL); } 
 
 \"[a-zA-Z0-9_\+\-]+"."[a-zA-Z0-9_]+\" {push(FILENAME,0,(char *) doFilename(yytext)); }
 
-[a-zA-Z][a-zA-Z0-9_]* {push(STRING,NO_NUMBER,strdup(yytext)); }  // note: must start with a letter
+[a-zA-Z][a-zA-Z0-9_]* {push(STRING,NO_NUMBER,strdup(yytext)); } 
 
  /* note that negative and positive are handled above in plus/minus */
 
@@ -157,9 +158,6 @@ exit                 {push(EXIT,0,NULL); }
 [0-9]*[.][0-9]+[Pp]     {numberPeriod(yytext); }  // period seconds
 [0-9]*[.][0-9]+%        {numberpct(yytext); }  // percentage
 
-
-.|\n                 {ECHO; }
-
 %%
 extern FILE * copyyyin;
 extern char * copyinfile;
@@ -171,7 +169,6 @@ int main(int argc, char * argv[]) {
   int i;
 
   printf("%sEASY2: audio generator\n%s",CYN,WHT);
-  linecount=0;
 
   if (argc>1) {
     for (i=1;i<argc;i++) {

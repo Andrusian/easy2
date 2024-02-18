@@ -37,6 +37,8 @@ void finish(void);
 const char * doFilename (char *);
 void doComma(void);
 void doNegative(void);
+char * assignvar(char *);    
+char * loopvar(char *);    
 
 // these are found in easy_node.cpp:
 
@@ -109,6 +111,7 @@ void displayForward();
 #define RAMPS 43
 #define EXIT 44
 #define TIMESTAMP 45
+#define ASSIGNLHS 46
 
 #define COMMA 99
 

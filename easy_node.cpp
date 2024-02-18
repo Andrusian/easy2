@@ -138,7 +138,7 @@ void displayBackward() {
    int i=0;
    while(ptr != NULL) {
      i++;
-     // printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
+     printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
      ptr = ptr->lft;
    }
 	
@@ -159,7 +159,8 @@ void displayForward() {
      i++;
 	
      //print data
-     // printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
+
+     printf("%d    (%x -- %s,%f,%s,%d)\n",i,ptr,debug_type(ptr->dtype),ptr->value,ptr->str,ptr->filled);
 		
      //move to lft item
      ptr = ptr ->rght;
