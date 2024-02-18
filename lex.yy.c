@@ -507,7 +507,7 @@ static const flex_int16_t yy_nxt[386] =
     {   0,
         4,    5,    6,    5,    7,    8,    9,   10,   11,   12,
        13,   14,   15,   16,   16,   16,   16,   17,   18,   19,
-       20,   21,   22,   19,    4,   23,   24,   25,   26,   27,
+       20,   21,   22,   19,   19,   23,   24,   25,   26,   27,
        28,   29,   20,   19,   30,   31,   32,   33,   34,   35,
        19,   36,   37,   38,   19,   39,   40,   19,   19,   41,
       272,   41,   45,   45,   45,   45,   46,   53,   53,   53,
@@ -2446,7 +2446,6 @@ int main(int argc, char * argv[]) {
     printf("           48 sets output to 48kHz format\n%s",WHT);
     exit(0);
   }
-
 
   // set lex to read from it instead of defaulting to STDIN:
 

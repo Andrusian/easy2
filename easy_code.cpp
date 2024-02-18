@@ -113,7 +113,6 @@ extern "C" {
 #include "easy_wav.hpp"
 #include "easy_node.hpp"
 
-
 extern "C" {
   extern int flag48;
   FILE * copyyyin;
@@ -122,7 +121,6 @@ extern "C" {
 }
 
 void doMp3(const char * infile, const char * songname);
-
 
 using namespace std;
 
@@ -144,6 +142,8 @@ node * GetLeft (node * center);
 node * GetRight (node * center);
 const char * debug_type (int dtype);
 void scanForAssignments(void);
+void midi_symbols(void);
+void doPreset (const char * str, float number);
 
 // these are over in easy_sound...
 
@@ -235,6 +235,218 @@ void numberPeriod (char * str) {
   }
   push(NUMBER,inv,NULL);
 }
+
+
+// define all the midi note values as symbols
+
+void midi_symbols (void) {
+  doPreset("M127",12543.85);
+  doPreset("M126",11839.82);
+  doPreset("M125",11175.3);
+  doPreset("M124",10548.08);
+  doPreset("M123",9956.06);
+  doPreset("M122",9397.27);
+  doPreset("M121",8869.84);
+  doPreset("M120",8372.02);
+  doPreset("M119",7902.13);
+  doPreset("M118",7458.62);
+  doPreset("M117",7040);
+  doPreset("M116",6644.88);
+  doPreset("M115",6271.93);
+  doPreset("M114",5919.91);
+  doPreset("M113",5587.65);
+  doPreset("M112",5274.04);
+  doPreset("M111",4978.03);
+  doPreset("M110",4698.64);
+  doPreset("M109",4434.92);
+  doPreset("M108",4186.01);
+  doPreset("M107",3951.07);
+  doPreset("M106",3729.31);
+  doPreset("M105",3520);
+  doPreset("M104",3322.44);
+  doPreset("M103",3135.96);
+  doPreset("M102",2959.96);
+  doPreset("M101",2793.83);
+  doPreset("M100",2637.02);
+  doPreset("M99",2489.02);
+  doPreset("M98",2349.32);
+  doPreset("M97",2217.46);
+  doPreset("M96",2093);
+  doPreset("M95",1975.53);
+  doPreset("M94",1864.66);
+  doPreset("M93",1760);
+  doPreset("M92",1661.22);
+  doPreset("M91",1567.98);
+  doPreset("M90",1479.98);
+  doPreset("M89",1396.91);
+  doPreset("M88",1318.51);
+  doPreset("M87",1244.51);
+  doPreset("M86",1174.66);
+  doPreset("M85",1108.73);
+  doPreset("M84",1046.5);
+  doPreset("M83",987.77);
+  doPreset("M82",932.33);
+  doPreset("M81",880);
+  doPreset("M80",830.61);
+  doPreset("M79",783.99);
+  doPreset("M78",739.99);
+  doPreset("M77",698.46);
+  doPreset("M76",659.26);
+  doPreset("M75",622.25);
+  doPreset("M74",587.33);
+  doPreset("M73",554.37);
+  doPreset("M72",523.25);
+  doPreset("M71",493.88);
+  doPreset("M70",466.16);
+  doPreset("M69",440);
+  doPreset("M68",415.3);
+  doPreset("M67",392);
+  doPreset("M66",369.99);
+  doPreset("M65",349.23);
+  doPreset("M64",329.63);
+  doPreset("M63",311.13);
+  doPreset("M62",293.66);
+  doPreset("M61",277.18);
+  doPreset("M60",261.63);
+  doPreset("M59",246.94);
+  doPreset("M58",233.08);
+  doPreset("M57",220);
+  doPreset("M56",207.65);
+  doPreset("M55",196);
+  doPreset("M54",185);
+  doPreset("M53",174.61);
+  doPreset("M52",164.81);
+  doPreset("M51",155.56);
+  doPreset("M50",146.83);
+  doPreset("M49",138.59);
+  doPreset("M48",130.81);
+  doPreset("M47",123.47);
+  doPreset("M46",116.54);
+  doPreset("M45",110);
+  doPreset("M44",103.83);
+  doPreset("M43",98);
+  doPreset("M42",92.5);
+  doPreset("M41",87.31);
+  doPreset("M40",82.41);
+  doPreset("M39",77.78);
+  doPreset("M38",73.42);
+  doPreset("M37",69.3);
+  doPreset("M36",65.41);
+  doPreset("M35",61.74);
+  doPreset("M34",58.27);
+  doPreset("M33",55);
+  doPreset("M32",51.91);
+  doPreset("M31",49);
+  doPreset("M30",46.25);
+  doPreset("M29",43.65);
+  doPreset("M28",41.2);
+  doPreset("M27",38.89);
+  doPreset("M26",36.71);
+  doPreset("M25",34.65);
+  doPreset("M24",32.7);
+  doPreset("M23",30.87);
+  doPreset("M22",29.14);
+  doPreset("M21",27.5);
+
+  doPreset("_C8",4186.01);
+  
+  doPreset("_B7",3951.07);
+  doPreset("_Bb7",3729.31);
+  doPreset("_A7",3520);
+  doPreset("_Ab7",3322.44);
+  doPreset("_G7",3135.96);
+  doPreset("_Gb7",2959.96);
+  doPreset("_F7",2793.83);
+  doPreset("_E7",2637.02);
+  doPreset("_Eb7",2489.02);
+  doPreset("_D7",2349.32);
+  doPreset("_Db7",2217.46);
+  doPreset("_C7",2093);
+
+  doPreset("_B6",1975.53);
+  doPreset("_Bb6",1864.66);
+  doPreset("_A6",1760);
+  doPreset("_Ab6",1661.22);
+  doPreset("_G6",1567.98);
+  doPreset("_Gb6",1479.98);
+  doPreset("_F6",1396.91);
+  doPreset("_E6",1318.51);
+  doPreset("_Eb6",1244.51);
+  doPreset("_D6",1174.66);
+  doPreset("_Db6",1108.73);
+  doPreset("_C6",1046.5);
+
+  doPreset("_B5",987.77);
+  doPreset("_Bb5",932.33);
+  doPreset("_A5",880);
+  doPreset("_Ab5",830.61);
+  doPreset("_G5",783.99);
+  doPreset("_Gb5",739.99);
+  doPreset("_F5",698.46);
+  doPreset("_E5",659.26);
+  doPreset("_Eb5",622.25);
+  doPreset("_D5",587.33);
+  doPreset("_D5b",554.37);
+  doPreset("_C5",523.25);
+  
+  doPreset("_B4",493.88);
+  doPreset("_Bb4",466.16);
+  doPreset("_A4",440);
+  doPreset("_Ab4",415.3);
+  doPreset("_G4",392);
+  doPreset("_Gb4",369.99);
+  doPreset("_F4",349.23);
+  doPreset("_E4",329.63);
+  doPreset("_Eb4",311.13);
+  doPreset("_D4",293.66);
+  doPreset("_Db4",277.18);
+  doPreset("_C4",261.63);
+
+  doPreset("_B3",246.94);
+  doPreset("_Bb3",233.08);
+  doPreset("_A3",220);
+  doPreset("_Ab3",207.65);
+  doPreset("_G3",196);
+  doPreset("_Gb3",185);
+  doPreset("_F3",174.61);
+  doPreset("_E3",164.81);
+  doPreset("_Eb3",155.56);
+  doPreset("_D3",146.83);
+  doPreset("_Db3",138.59);
+  doPreset("_C3",130.81);
+
+  doPreset("_B2",123.47);
+  doPreset("_Bb2",116.54);
+  doPreset("_A2",110);
+  doPreset("_Ab2",103.83);
+  doPreset("_G2",98);
+  doPreset("_Gb2",92.5);
+  doPreset("_F2",87.31);
+  doPreset("_E2",82.41);
+  doPreset("_Eb2",77.78);
+  doPreset("_D2",73.42);
+  doPreset("_Db2",69.3);
+  doPreset("_C2",65.41);
+  
+  doPreset("_B1",61.74);
+  doPreset("_Bb1",58.27);
+  doPreset("_A1",55);
+  doPreset("_Ab1",51.91);
+  doPreset("_G1",49);
+  doPreset("_Gb1",46.25);
+  doPreset("_F1",43.65);
+  doPreset("_E1",41.2);
+  doPreset("_Eb1",38.89);
+  doPreset("_D1",36.71);
+  doPreset("_Db1",34.65);
+  doPreset("_C1",32.7);
+  
+  doPreset("_B0",30.87);
+  doPreset("_Bb0",29.14);
+  doPreset("_A0",27.5);
+}
+
+
 
 //----------------------------------------------------------------------
 // shape presets
@@ -666,6 +878,19 @@ void doAssignment (node * ass) {
 }
 
 //----------------------------------------------------------------------
+// presetAssignNumeric
+//
+// presets are all Numeric types at the moment
+//
+void doPreset (const char * str, float number) {
+  string varnameStr=string(str);
+  
+  variables.insert({varnameStr,V_FLOAT});
+  varValues.insert({varnameStr,number});
+  varLines.insert({varnameStr,NO_NUMBER});
+}
+
+//----------------------------------------------------------------------
 // exits on an error with a message
 // TODO: add a line number to this
 
@@ -750,6 +975,9 @@ void init (void) {
     SR=44100;
     printf("%sOutput format is 44.1kHz, 16 bit .wav\n%s",MAG,WHT);
   }
+
+  printf("%sLoading preset symbols.\n%s",CYN,WHT);
+  midi_symbols();
 }
 
 //--------------------------------------------------

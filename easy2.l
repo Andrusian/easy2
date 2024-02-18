@@ -143,7 +143,7 @@ exit                                          {push(EXIT,0,NULL); }
 
 \"[a-zA-Z0-9_\+\-]+"."[a-zA-Z0-9_]+\" {push(FILENAME,0,(char *) doFilename(yytext)); }
 
-[a-zA-Z][a-zA-Z0-9_]* {push(STRING,NO_NUMBER,strdup(yytext)); } 
+[a-zA-Z_][a-zA-Z0-9_]* {push(STRING,NO_NUMBER,strdup(yytext)); } 
 
  /* note that negative and positive are handled above in plus/minus */
 
@@ -204,7 +204,6 @@ int main(int argc, char * argv[]) {
     printf("           48 sets output to 48kHz format\n%s",WHT);
     exit(0);
   }
-
 
   // set lex to read from it instead of defaulting to STDIN:
 
