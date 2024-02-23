@@ -1,6 +1,7 @@
 
 %{
 #include "easy_code.h"
+int endOfFile (void);
 
 /* recognize the keywords */
 %}
@@ -40,6 +41,7 @@ vol3                 {push(VOL3,0,NULL); }
  /* these keywords actually do stuff with output signal */
 
 output               {push(OUTPUT,0,NULL); }
+include              {push(INCLUDE,0,NULL); }
 mix                  {push(MIX,0,NULL); }
 sound                {push(SOUND,0,NULL); }
 silence              {push(SILENCE,0,NULL); }
@@ -116,9 +118,9 @@ gap2                   {push(SH_GAP2,0,NULL); }
 
  /* flow control */
 
-repeat                                        {push(REPEAT,0,NULL); }
-loop[ ]+[a-zA-Z][a-zA-Z0-9_]*                 {push(LOOP,0,loopvar(strdup(yytext))); }
-exit                                          {push(EXIT,0,NULL); }
+repeat                          {push(REPEAT,0,NULL); }
+loop[ ]+[a-zA-Z][a-zA-Z0-9_]*   {push(LOOP,0,loopvar(strdup(yytext))); }
+exit                            {push(EXIT,0,NULL); }
 
  /* time stamps */
 
@@ -157,6 +159,8 @@ exit                                          {push(EXIT,0,NULL); }
 [0-9]*[.][0-9]+[Ss]     {numbers(yytext); }  // amount in seconds
 [0-9]*[.][0-9]+[Pp]     {numberPeriod(yytext); }  // period seconds
 [0-9]*[.][0-9]+%        {numberpct(yytext); }  // percentage
+
+<<EOF>>                 {endOfFile();}
 
 %%
 extern FILE * copyyyin;
@@ -211,20 +215,36 @@ int main(int argc, char * argv[]) {
   copyyyin=yyin;
   
   init();             // setup
+  yypush_buffer_state(yy_create_buffer(yyin,YY_BUF_SIZE));
+  
   yylex();            // process commands
+
+  yypop_buffer_state();
   finish();           // write output
   exit(0);
 }
 
 void restart (void) {
+  yyrestart(yyin);
   yy_flush_buffer(YY_CURRENT_BUFFER);
 } 
 
-int yywrap() {
-   // open next reference or source file and start scanning
-   // if((yyin = compiler->getNextFile()) != NULL) {
-   //    line = 0; // reset line counter for next source file
-   //    return 0;
-   //}
-   return 1;
+void pushIncludeFile (FILE *f) {
+  yypush_buffer_state(yy_create_buffer(f,YY_BUF_SIZE));
+}
+
+int endOfFile (void) {
+  yypop_buffer_state();
+  checkEndOfInclude();
+  if (!YY_CURRENT_BUFFER) {
+    printf("%sEnd of main input file\n%s",CYN,WHT);
+    finish();
+    exit(0);
+  }
+    
+  return 1;
+}
+
+int yywrap() {   /* maybe unneeded I think */
+  return 1;
 }

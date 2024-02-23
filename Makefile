@@ -17,7 +17,7 @@ easy_mp3.o: $(HEADERS) easy_mp3.cpp
 lex.yy.o: lex.yy.c
 
 lex.yy.c: easy2.l
-	lex easy2.l
+	flex easy2.l
 
 clean:
 	rm *.o

@@ -1,11 +1,11 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Congratulations, you have found the central file for:
 //
-//  EEE    A     SS   Y   Y    22                                            
-//  E     A A   S     Y   Y   2  2                                           
+//  EEE    A     SS   Y   Y    22                                           
+//  E     A A   S     Y   Y   2  2                                          
 //  EE   A   A   SS    Y Y      2                                           
-//  E    AAAAA     S    Y      2                                             
-//  EEE  A   A  SSS     Y     2222                                            
+//  E    AAAAA     S    Y      2                                            
+//  EEE  A   A  SSS     Y     2222                                          
 //                                                                      
 // Easy 2 is a script-based sound generator to make audio files.
 // It is focused on certain types of sound effects for electronic
@@ -99,6 +99,9 @@ extern "C" {
 #include "easy_code.h"
 #include "math.h"
   extern void restart(void);   // over in lex.yy.c
+  extern void pushIncludeFile (FILE *f);
+  extern void endOfFile(void);
+ 
 }
 
 #include <ctime>
@@ -115,7 +118,7 @@ extern "C" {
 
 extern "C" {
   extern int flag48;
-  FILE * copyyyin;
+   FILE * copyyyin;
   const char * copyinfile;
   int lineNumber=0;
 }
@@ -641,7 +644,7 @@ void Shape::loadTable(void) {
     // printf("initial shape (step %ld): %f -> %f   %d -> %d\n",step,vb,va,tb,ta);
 }
 
-//----------------------------------------------------------------------
+//--------------------------
 // handle variable storage
 // 
 // a variable can be a float (if the result of a math equation)
@@ -657,6 +660,20 @@ map<string,float> varValues;
 map<string,int> varLines;
 map<string,node *> varNodes;
 map<string,long> varFilepos;
+
+//--------------------------
+// handle include stack
+// This will be empty in the main file.
+// The main file will appear in 1st level of include.
+
+typedef struct {
+  string filename;
+  int lineno;
+  FILE *file;
+  fpos_t pos;
+} fileRef;
+
+stack<fileRef> fileStack;
 
 //--------------------------------------------------
 
@@ -1447,7 +1464,7 @@ void finish(void) {
 
     // auto generate filename from infile if not specified
     
-    printf("%sInfile was %s\n%s",CYN,copyinfile,CYN);
+    printf("%sInfile was %s\n%s",CYN,copyinfile,WHT);
     outputFile=strdup(copyinfile);
     char * location=strcasestr(outputFile,".e2");
     if (location==NULL) {
@@ -1459,10 +1476,10 @@ void finish(void) {
     location++;  *location='v';
     location++;  *location='\0';
 
-    printf("%s Output automatically set to %s %s\n",CYN,outputFile,WHT);
+    printf("%sOutput automatically set to %s %s\n",CYN,outputFile,WHT);
   }
   
-  printf ("%s Writing file %s%s\n",CYN,outputFile,WHT);
+  printf ("%sWriting file %s%s\n",CYN,outputFile,WHT);
   
   wavout->writeFile(outputFile);
   doMp3(outputFile,copyinfile);
@@ -2445,7 +2462,7 @@ void doStuff(void) {
 
      // handle Output Filename because it is oddball
      
-    else if (cur->dtype==OUTPUT) {                   // special: takes filename
+    else if (cur->dtype==OUTPUT) {      // output: takes filename
       // printf("cmd: output\n");
 
       outputFile=(char *) FilenameRight(cur);
@@ -2455,7 +2472,80 @@ void doStuff(void) {
       
       // printf("cmd: output\n");
     }
+
+     // handle Output Filename because it is oddball
+     
+    else if (cur->dtype==INCLUDE) {     // include: takes filename
+      // printf("cmd: include\n");
+
+      char * includeFile=strdup((char *) FilenameRight(cur));
+      if (includeFile==NULL) {
+        syntaxError(cur,"Include filename is not specified\n");
+      }
+      
+      FILE *newfile = fopen(includeFile, "r");
+      if (!newfile) {
+        printf ("\n%sERROR: unable to open file: %s\n\n%s",RED,includeFile,WHT);
+        exit(2);
+      }
+
+      fileRef f;
+      fpos_t pos;
+      
+      f.filename=string(copyinfile);
+      f.lineno=lineNumber;
+      fgetpos(copyyyin,&pos);
+      f.pos=pos;
+      f.file=copyyyin;
+
+      fileStack.push(f);
+
+      printf("%sInclude file %s at %s:%d\n%s",CYN,includeFile,copyinfile,lineNumber,WHT);
+
+      
+      copyinfile=includeFile;
+      lineNumber=0;
+      pushIncludeFile(newfile);
+    }
+
     cur=cur->lft;
   }
    
+}
+
+//----------------------------------------------------------------------
+// checkEndOfInclude
+//
+// called by the yywrap() routine.
+//
+// If we were in an include, we need to set yyin back to the file
+// above and return 0.
+//
+// If we were not in an include, return 1 and the processing ends.
+//
+void checkEndOfInclude(void) {
+
+  if (fileStack.size()==0) {
+    return;
+  }
+
+  fileRef f=fileStack.top();
+  
+  fpos_t pos;
+  string filename;
+    
+  FILE * file=f.file;
+  lineNumber=f.lineno+1;
+  filename=f.filename;
+  pos=f.pos;
+  
+  if (fsetpos(file,&pos)!=0) {
+    printf("%sERROR - Could not set input to %s:%d %s",RED,filename.c_str(),lineNumber,WHT);
+    return;
+  }
+
+  copyinfile=strdup(filename.c_str());
+
+  fileStack.pop();
+  return;
 }

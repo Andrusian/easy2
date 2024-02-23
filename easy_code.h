@@ -17,7 +17,7 @@ struct node * pop(void);
 struct node * unshift(void);
 //void shift(fpos_t pos, int dtype, float value, char * str);
 void push(int dtype, float value, char * str);
-
+void checkEndOfInclude(void);
 void displayBackward();
 void displayForward();
 void emptyList();
@@ -38,7 +38,7 @@ const char * doFilename (char *);
 void doComma(void);
 void doNegative(void);
 char * assignvar(char *);    
-char * loopvar(char *);    
+char * loopvar(char *); 
 
 // these are found in easy_node.cpp:
 
@@ -112,6 +112,7 @@ void displayForward();
 #define EXIT 44
 #define TIMESTAMP 45
 #define ASSIGNLHS 46
+#define INCLUDE 47
 
 #define COMMA 99
 
