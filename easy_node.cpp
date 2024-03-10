@@ -14,6 +14,8 @@ node *begn=NULL;
 node *current=NULL;
 
 extern const char * debug_type (int dtype);
+extern bool subBlock;
+
 fpos_t myftell (FILE *fp);
 
 //======================================================================
@@ -94,6 +96,7 @@ void replaceNode(node *n, int type, float v, char * s) {
 void emptyList() {
   begn=NULL;
   elist=NULL;
+  // printf("NC\n");
 }
 
 //------------------------
@@ -214,29 +217,32 @@ void insertNodes(node *to, node*from) {
 
 void push(int dtype, float value, char * str) {
 
+
   // printf("push debug: %d %f\n",dtype,value);
 
-   //create a link
-   node *link = (node*) malloc(sizeof(node));
-   link->dtype = dtype;
-   link->value = value;
-   link->str = str;
-   link->filled = false;
-	
-   if(isEmpty()) {
-      //make it the begn link
-      begn = link;
-      link->rght=NULL;
-   } else {
-      //update first rght link
-      elist->rght = link;
-   }
+  //create a link
+  node *link = (node*) malloc(sizeof(node));
+  link->dtype = dtype;
+  link->value = value;
+  link->str = str;
+  link->filled = false;
+  link->lft=NULL;
+  link->rght=NULL;
 
-   //point it to old first link
-   link->lft = elist;
-	
-   //point first to new first link
-   elist = link;
+  if(isEmpty()) {
+     //make it the begn link
+     begn = link;
+     link->rght=NULL;
+  } else {
+     //update first rght link
+     elist->rght = link;
+  }
+
+  //point it to old first link
+  link->lft = elist;
+
+  //point first to new first link
+  elist = link;
 }
 
 // //insert link at the begn location

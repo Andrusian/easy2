@@ -120,7 +120,9 @@ extern "C" {
   extern int flag48;
    FILE * copyyyin;
   const char * copyinfile;
+  const char * originalinfile;
   int lineNumber=0;
+  extern int subBlock;
 }
 
 void doMp3(const char * infile, const char * songname);
@@ -175,6 +177,66 @@ RandSeq *unusedRand=NULL;
 stack<double> rewindHistory;            // remembers previous times of sounds
 bool updateDefaults=true;               // flag for updating default settings
 
+//--------------------------
+// handle variable / symbold storage
+
+map<string,int> variables;
+map<string,float> varValues;
+map<string,int> varLines;
+map<string,node *> varNodes;
+map<string,long> varFilepos;
+
+//----------------------------------------
+void clearVariables (void) {
+  variables.clear();
+  varValues.clear();
+  varLines.clear();
+  varNodes.clear();
+  varFilepos.clear();
+}
+
+//--------------------------
+// handle include stack
+// This will be empty in the main file.
+// The main file will appear in 1st level of include.
+
+typedef struct {
+  string filename;
+  int lineno;
+  FILE *file;
+  fpos_t pos;
+} fileRef;
+
+stack<fileRef> fileStack;
+
+//---------------------
+// subroutine-related variables
+
+
+class subEntry {
+  public:
+  string name;
+  string filename;
+  int line;
+  FILE * file;
+  fpos_t filepos;
+};
+
+
+map<string,subEntry *> subroutines;
+
+string subName;       // subroutine name currently being defined
+int subLine;          // starting line of subroutine currently being defined
+FILE *subfile;
+string subfilename;
+fpos_t subpos;
+
+typedef struct {
+  string filename;
+  int line;
+} subStackItem;
+
+stack<subStackItem> substack;
 
 //------------------------------------------
 
@@ -185,8 +247,6 @@ NumberDriver::~NumberDriver() {}
 
 
 struct settings_struct defaults;
-
-
 struct settings_struct_stacked settings;
 
 //--------------------------------
@@ -452,6 +512,37 @@ void midi_symbols (void) {
 
 
 //----------------------------------------------------------------------
+// gotoLine
+//
+// This is used by subs and loop to fast forward the current
+// yyin FILE to the desired line. Whole lines must be used
+// because lex's internal buffers will usually consume the whole file.
+//
+void gotoLine (int lineTarget) {
+
+  rewind(getyyin());  // start at beginning of input
+  restart();
+  lineNumber=0;      // and reset our counter too
+  char buffer[4096];
+  
+  while (!feof(getyyin())) {
+    fgets(buffer,4093,getyyin());
+    lineNumber++;
+    if (lineNumber==lineTarget) {
+      // input file should be positioned properly to
+      // continue in lex now (i hope)
+
+      return;    // lets get out of here
+    }
+  }
+
+  // what if the loop is not constructed right...
+         
+  printf("Error: in goto line: '%d'.\n",lineTarget);
+  exit(0);
+}
+
+//----------------------------------------------------------------------
 // shape presets
 //
 // class definition over in easy.hpp but initialization
@@ -655,26 +746,6 @@ void Shape::loadTable(void) {
 #define V_FLOAT 0
 #define V_STRING 1
 
-map<string,int> variables;
-map<string,float> varValues;
-map<string,int> varLines;
-map<string,node *> varNodes;
-map<string,long> varFilepos;
-
-//--------------------------
-// handle include stack
-// This will be empty in the main file.
-// The main file will appear in 1st level of include.
-
-typedef struct {
-  string filename;
-  int lineno;
-  FILE *file;
-  fpos_t pos;
-} fileRef;
-
-stack<fileRef> fileStack;
-
 //--------------------------------------------------
 
 void listVariables(void) {
@@ -689,6 +760,16 @@ void listVariables(void) {
     }
   }
 }
+
+//----------------------------------------------------------------------
+// exits on an error with a message
+// TODO: add a line number to this
+
+void syntaxError (node * cur,const char * str) {
+  printf("%sERROR - line number %d - %s\n%s",RED,lineNumber,str,WHT);
+  exit(1);
+}
+
 
 //----------------------------------------------------------------------
 // 4th or 5th time rewriting this
@@ -769,6 +850,46 @@ char * loopvar(char *in) {
   return strdup(cpy);
 }
 
+//----------------------------------------------------------------------
+// doRequire
+//
+// This command exits if the variable is not defined.
+//
+void doRequire (struct node * cur) {
+  string varname;
+  char * spot;
+
+  /* variable name is already in the node but we have to split it */
+
+  spot=strchr(cur->str,' ');
+  if (spot==NULL) {
+    syntaxError(cur,"Something wrong in 'require' command\n");
+  }
+  
+  varname=string(spot+1);
+
+  // optionally there might be a backup value
+  // backup values must be numeric, we can't handle macros, see below
+
+  float backupValue=NumberRight(cur);
+  
+  if (variables.find(varname)==variables.end()) {
+    if (backupValue==NO_NUMBER) {
+      printf("%srequire check failed: '%s' not defined\n%s",RED,varname.c_str(),WHT);
+      exit(2);
+    }
+    else {
+      // not defined? use the backup
+      // if the variable was a string (a macro) it is going to
+      // be transformed into a float
+      
+      variables[varname]=V_FLOAT;
+      varValues[varname]=backupValue;
+      varLines[varname]=lineNumber;
+    }
+  }
+}
+
 //--------------------------------------------------
 // this routine does the substituion of either
 // a value (simple) or a macro (a string of nodes inserted)
@@ -812,6 +933,7 @@ bool swapVariables(void) {
 
      if (ptr->dtype==STRING) {   // detect the name of the SYMBOL
        string name=string(ptr->str);
+       // cout << name << " --- looking at VARIABLE\n";
        
        if (variables.find(name)!=variables.end()) {
          int type=variables[name];
@@ -824,7 +946,7 @@ bool swapVariables(void) {
              // the value of the variable
 
              ptr->value=varValues[name];  // change datatype
-             //printf("DEBUG: %s was defined as %f at line %d\n",name.c_str(),varValues[name],varLines[name]);
+             // printf("DEBUG: %s was defined as %f at line %d\n",name.c_str(),varValues[name],varLines[name]);
              ptr->dtype=NUMBER;          // and fill in number
 
               // flag that this variable was populated with a number
@@ -866,22 +988,24 @@ void doAssignment (node * ass) {
   
   if (isNumerical(rightside)) {
     if (variables.find(varnameStr) != variables.end()) {
-      printf("DEBUG: modifying numeric variable %s at line %d \n",varnameStr.c_str(),lineNumber);
-      printf("found: modify existing %s\n",varnameStr.c_str());
+      //printf("DEBUG: modifying numeric variable %s at line %d \n",varnameStr.c_str(),lineNumber);
+      // printf("found: modify existing %s\n",varnameStr.c_str());
       variables[varnameStr]=V_FLOAT;
       varValues[varnameStr]=rightside->value;
       varLines[varnameStr]=lineNumber;
+      printf("cmd: %s=%f\n",varnameStr.c_str(),rightside->value);
     }
     else {
       // not found: add new entry
-      printf("DEBUG: storing new numeric variable %s at line %d \n",varnameStr.c_str(),lineNumber);
+      //printf("DEBUG: storing new numeric variable %s at line %d \n",varnameStr.c_str(),lineNumber);
       variables.insert({varnameStr,V_FLOAT});
       varValues.insert({varnameStr,rightside->value});
       varLines.insert({varnameStr,lineNumber});
+      printf("cmd: %s=%f\n",varnameStr.c_str(),rightside->value);
     }
   }
   else {
-    // printf("    debug: storing macro variable %s\n",varname);
+    printf("cmd: %s= ...commands... \n",varnameStr.c_str());
 
     // otherwise, store the sequence of commands
     // here we copy from the present location to the end of the line
@@ -905,15 +1029,6 @@ void doPreset (const char * str, float number) {
   variables.insert({varnameStr,V_FLOAT});
   varValues.insert({varnameStr,number});
   varLines.insert({varnameStr,NO_NUMBER});
-}
-
-//----------------------------------------------------------------------
-// exits on an error with a message
-// TODO: add a line number to this
-
-void syntaxError (node * cur,const char * str) {
-  printf("%sERROR - line number %d - %s\n%s",RED,lineNumber,str,WHT);
-  exit(1);
 }
 
 //----------------------------------------------------------------------
@@ -1336,6 +1451,9 @@ double NumberRight (node * n) {
   if (right->dtype==NUMBER) {
     return right->value;
   }
+  else if (right->dtype==STRING) {   // could also be a swapped string
+    return right->value;
+  }
 
   return NO_NUMBER;
 }
@@ -1357,57 +1475,82 @@ double NumberRight (node * n) {
 // until there is nothing left to process.
 
 void processCommands (void) {
-  updateDefaults=true;
-  
-  copySettings();
 
-  printf("line %d\n",lineNumber);
-  // displayForward();
+  printf("at \"%s\":%d ",copyinfile,lineNumber);
 
-  // printf("  before swapVariables... \n");
+  // if subblock is turned on, we need to skip over
+  // all the commands until it is turned off. 
 
-  scanForAssignments();      // pre-process any assignments
-  
-  // displayBackward();
-  
-  // swap variables into line
-
-  while (swapVariables()) {}  // loop until no more to swap
-
-  // printf("  after swapVariables... \n");
-
-  // displayForward();
-   // displayBackward();
-  
-  // printf("  before math0\n");
-
-  // displayForward();
-  // displayBackward();
-
-  doMath0();           // handle positives and negatives
-
-  // printf("  after math0, before math1 \n");
-
-  // displayBackward();
-
-  doMath1();           // multi,div,modulus
-
-  // printf("  after math1, before math2 \n");
-
-  // displayBackward();
-
-  doMath2();           // adding and subtracting
-
-  // printf("  after math2 \n");
-  
-  lookForRepeat();
-
-  if (updateDefaults) {
-    // printf("updating defaults line %d\n",lineNumber);
-    copySettingsToDefaults();
+  if (subBlock) {
+    // printf("line %d subblock is on\n",lineNumber);
+    return;
   }
-  
-  // displayBackward();
+  else {
+    // printf("line %d subblock is off\n",lineNumber);
+
+    if ((begn==NULL)||(elist==NULL)) {
+      printf(" (no commands)\n");
+      emptyList();
+
+      return;
+    }
+
+    updateDefaults=true;
+
+    copySettings();
+
+    // displayForward();
+
+    // printf("  before swapVariables... \n");
+
+    scanForAssignments();      // pre-process any assignments
+
+    // displayForward();
+
+    // swap variables into line
+
+    bool found=true;
+    do {
+      found=swapVariables();
+      // printf("SV- found %d\n",found);
+
+    } while (found==true);   // loop until no more to swap
+
+    // printf("  after swapVariables... \n");
+
+    // displayForward();
+     // displayBackward();
+
+    // printf("  before math0\n");
+
+    // displayForward();
+    // displayBackward();
+
+    doMath0();           // handle positives and negatives
+
+    // printf("  after math0, before math1 \n");
+
+    // displayBackward();
+
+    doMath1();           // multi,div,modulus
+
+    // printf("  after math1, before math2 \n");
+
+    // displayBackward();
+
+    doMath2();           // adding and subtracting
+
+    // printf("  after math2 \n");
+
+    lookForRepeat();
+
+    if (updateDefaults) {
+      // printf("updating defaults line %d\n",lineNumber);
+      copySettingsToDefaults();
+    }
+
+    // displayBackward();
+  }
   emptyList();
 }
 
@@ -1464,8 +1607,8 @@ void finish(void) {
 
     // auto generate filename from infile if not specified
     
-    printf("%sInfile was %s\n%s",CYN,copyinfile,WHT);
-    outputFile=strdup(copyinfile);
+    printf("%sInfile was %s\n%s",CYN,originalinfile,WHT);
+    outputFile=strdup(originalinfile);
     char * location=strcasestr(outputFile,".e2");
     if (location==NULL) {
       printf("Sorry - expecting .e2 input filename. Could not output.\n");
@@ -1482,7 +1625,7 @@ void finish(void) {
   printf ("%sWriting file %s%s\n",CYN,outputFile,WHT);
   
   wavout->writeFile(outputFile);
-  doMp3(outputFile,copyinfile);
+  doMp3(outputFile,originalinfile);
 }
 //----------------------------------------------------------------------
 // We're looking for nodes STRING,= in that order.
@@ -1513,7 +1656,7 @@ void scanForAssignments(void) {
       found->dtype=ASSIGNLHS;   // disable the STRING
       ptr->str=found->str;      // copy STRING into = sign
       foundString=false;
-      printf("DEBUG: stored %s in '='\n",ptr->str);
+      //printf("DEBUG: stored %s in '='\n",ptr->str);
     }
     else {
       foundString=false;
@@ -1714,6 +1857,7 @@ void doMath1 (void) {
       }
 
       result=(left->value/right->value); // so math op with left and right operands
+      // printf("divide result: %f / %f = %f\n", left->value, right->value, result);
       replaceNode(left,NUMBER,result,NULL);  // put answer in LEFT node
 
       // zero out other two nodes with NOOPs
@@ -1902,7 +2046,7 @@ void doStuff(void) {
   node *cur;
   NumberDriver * item;
 
-  //displayForward();
+  // displayForward();
   //displayBackward();
 
   cur=elist;
@@ -1926,6 +2070,18 @@ void doStuff(void) {
     else if (cur->dtype==ASSIGNMENT) {
       doAssignment(cur);
     }    
+
+    
+    else if (cur->dtype==REQUIRE) {
+      // checks that a variable is defined
+      //
+      // TO DO: provide an optional fallback value if not defined.
+      
+      printf("cmd: require\n");
+      doRequire(cur);
+    }
+
+    
     else if (cur->dtype==TIMESTAMP) {
       convertTimeStampToNumber(cur);
     }
@@ -2205,6 +2361,17 @@ void doStuff(void) {
       
     }
 
+    // clear...
+    // Clear is an odd command. It clears all variables. The purpose is
+    // to wipe out any variables being used in between subroutines. It should
+    // also cause loops to fall through if misplaced.
+
+    else if (cur->dtype==CLEAR) {
+      printf("\n%scmd: clear - clearing all symbols\n%s",YEL,WHT);
+
+      clearVariables();
+    }
+    
     // seq...
     
     else if (cur->dtype==SEQ) {                     // number driver
@@ -2300,9 +2467,21 @@ void doStuff(void) {
     // these generally just take a time length
       
     else if (cur->dtype==SOUND) {              // action
-      printf("cmd: sound\n");
              
       double soundLength=NumberRight(cur);
+
+      if (soundLength==NO_NUMBER) {
+        printf("%sError - didn't find a sound length to right of sound command (%fs) \n%s",RED,soundLength,WHT);
+        exit(2);
+      }
+      
+      if ((soundLength<.00001)||(soundLength>3600)) {
+        printf("%sError - sound length out of range: %f%s\n",RED,soundLength,WHT);
+        exit(2);
+      }
+
+      printf("cmd: sound %f\n",soundLength);
+      
       soundLengthX=soundLength*SR;        // needed for shape and ramp
 
       if (soundLength==-1) {
@@ -2434,11 +2613,9 @@ void doStuff(void) {
          lineNumber=0;      // and reset our counter too
 
          char buffer[4096];
-         string search1=string(destination)+" =";
-         string search2=string(destination)+"=";
 
-         while (!feof(copyyyin)) {
-           fgets(buffer,4093,copyyyin);
+         while (!feof(getyyin())) {
+           fgets(buffer,4093,getyyin());
            lineNumber++;
            if (lineNumber==lineTarget) {
              printf("found! %d \n",lineNumber);
@@ -2524,10 +2701,12 @@ void doStuff(void) {
 // If we were not in an include, return 1 and the processing ends.
 //
 void checkEndOfInclude(void) {
+  emptyList();
 
   if (fileStack.size()==0) {
     return;
   }
+  printf("%sEnd of include file.\n%s",GRN,WHT);
 
   fileRef f=fileStack.top();
   
@@ -2549,3 +2728,113 @@ void checkEndOfInclude(void) {
   fileStack.pop();
   return;
 }
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// subroutines
+//
+// Subroutines work similarly to include files with regards to flex voodoo.
+// All subroutines need to be parsed and processed at runtime. When we are declaring them
+// we must suspend most command processing... we'll set a gatekeeper flag for this.
+//
+// As we scan the files, we'll make a list of all *complete* sub declarations we've found.
+// All symbols and the subs themselves are treated as global. As such, in absence of parameter passing,
+// we'll just use the globals. What might be needed is a clear indication of what the symbol
+// requirements are in each sub documentation.
+// 
+
+void declareSub (char * cmd) {
+  char * space= strchr(cmd, ' ');
+  if (space!=NULL) {
+    *space='\0'; 
+    subName=string(strdup(space+1));
+    subLine=lineNumber+2;  // add 1 for 'sub' line, add another to go beyond it
+    subBlock=1;
+    subfile=getyyin();
+    subfilename=string(copyinfile);
+    fgetpos(subfile,&subpos);
+    printf("%sDeclaring subroutine:%s at %s:%d %s\n",YEL,subName.c_str(),copyinfile,subLine,WHT);
+  }
+}
+
+//----------------------------------------------------------------------
+// This is he end of executing a subroutine.
+
+void returnSub (void) {
+  subStackItem ns;
+  
+  /* placeholder, nothing needed at the moment */
+
+  ns=substack.top();
+  copyinfile=strdup(ns.filename.c_str());
+  lineNumber=ns.line;
+  substack.pop();
+  printf("%sReturn from subroutine\n%s",YEL,WHT);
+}
+
+//----------------------------------------------------------------------
+// This is the end of declaring a subroutine.
+
+void endSub (void) {
+  subEntry *newsub=new subEntry;
+
+  // set up structure
+    
+  newsub->name=subName;
+  newsub->line=subLine;
+  newsub->file=subfile;
+  newsub->filepos=subpos;
+  newsub->filename=subfilename;
+
+  // and store structure
+    
+  subroutines[subName]=newsub;
+
+  // clear subroutine definition toggle
+    
+  subBlock=0;
+  printf("%sEnd of subroutine declaration:%s\n%s",YEL,subName.c_str(),WHT);
+  emptyList();
+}
+
+//----------------------------------------------------------------------
+
+void callSub (char * cmd) {
+  char * space= strchr(cmd, ' ');
+  if (space!=NULL) {
+    subBlock=0;
+    *space='\0';
+    
+    subName=string(strdup(space+1));
+    subBlock=0;
+    printf("%sCalling subroutine:%s%s\n",GRN,subName.c_str(),WHT);
+
+    
+    // fetch the buffer information
+
+    subEntry * s=subroutines[subName];
+    if (s==NULL) {
+      printf("%ssub not found: %s%s\n",RED,subName.c_str(),WHT);
+      exit(2);
+    }
+
+    lineNumber=s->line;
+
+    // printf("DEBUG target is at position FILE %x pos %d line %d\n",s->file,s->line); 
+
+    // push this info onto a stack
+    subStackItem ns;
+    
+    ns.filename=string(copyinfile);
+    ns.line=lineNumber;
+    
+    substack.push(ns);
+    
+    // set flex to the new location
+    
+    copyinfile=s->filename.c_str();
+    pushSub(s->file);
+    gotoLine(s->line);
+  }
+}
+
+

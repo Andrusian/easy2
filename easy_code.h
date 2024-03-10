@@ -39,6 +39,15 @@ void doComma(void);
 void doNegative(void);
 char * assignvar(char *);    
 char * loopvar(char *); 
+void declareSub(char *);
+void callSub(char *);
+void endSub(void);
+void returnSub (void);
+FILE * getyyin();
+void pushSub(FILE *f);
+int endSubC (void);
+
+void doRequire(struct node * n);
 
 // these are found in easy_node.cpp:
 
@@ -113,6 +122,11 @@ void displayForward();
 #define TIMESTAMP 45
 #define ASSIGNLHS 46
 #define INCLUDE 47
+#define SUB 48
+#define END 49
+#define CALL 50
+#define REQUIRE 51
+#define CLEAR 52
 
 #define COMMA 99
 

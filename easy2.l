@@ -7,7 +7,6 @@ int endOfFile (void);
 %}
 
 %%
-
 "#".*                { /* DO NOTHING */; }
 [\t ]+              /* ignore whitespace */
 
@@ -121,6 +120,13 @@ gap2                   {push(SH_GAP2,0,NULL); }
 repeat                          {push(REPEAT,0,NULL); }
 loop[ ]+[a-zA-Z][a-zA-Z0-9_]*   {push(LOOP,0,loopvar(strdup(yytext))); }
 exit                            {push(EXIT,0,NULL); }
+clear                           {push(CLEAR,0,NULL);}
+
+ /* subroutines */
+sub[ ]+[a-zA-Z][a-zA-Z0-9_]*        {declareSub(strdup(yytext));}
+end                                 {endSubC();}
+call[ ]+[a-zA-Z][a-zA-Z0-9_]*       {callSub(strdup(yytext));}
+require[ ]+[a-zA-Z_][a-zA-Z0-9_]*   {push(REQUIRE,0,strdup(yytext));}
 
  /* time stamps */
 
@@ -165,8 +171,13 @@ exit                            {push(EXIT,0,NULL); }
 %%
 extern FILE * copyyyin;
 extern char * copyinfile;
+extern char * originalinfile;
 
 int flag48=1;
+int subBlock=0;
+
+/*======================================================================*/
+
 
 int main(int argc, char * argv[]) {
   FILE *infile=NULL;
@@ -193,10 +204,19 @@ int main(int argc, char * argv[]) {
           printf ("\n%sERROR: unable to open file: %s\n\n%s",RED,argv[1],WHT);
           return -1;
         }
+
+        /* copyinfile becomes the current infile name visible on C++ side */
+        
         copyinfile=malloc(strlen((char *) argv[i])+3);  /* extra character */
+
+        
         strcpy((char *)copyinfile,(char *) argv[i]);
         copyinfile[strlen((char *) argv[i])]='\0';
-        printf("Processing input file: %s%s%s\n",CYN,argv[i],WHT);
+        
+        /* original infile is preserved */
+        
+        originalinfile=strdup(copyinfile);   /* save this to make output filename */
+        printf("Processing input file: %s%s%s\n",CYN,originalinfile,WHT);
       }
     }
   }
@@ -224,14 +244,26 @@ int main(int argc, char * argv[]) {
   exit(0);
 }
 
+/*----------------------------------------------------------------------*/
+
 void restart (void) {
   yyrestart(yyin);
   yy_flush_buffer(YY_CURRENT_BUFFER);
 } 
 
+/*----------------------------------------------------------------------*/
+
 void pushIncludeFile (FILE *f) {
   yypush_buffer_state(yy_create_buffer(f,YY_BUF_SIZE));
 }
+
+/*----------------------------------------------------------------------*/
+
+void pushSub (FILE *f) {
+  yypush_buffer_state(yy_create_buffer(f,YY_BUF_SIZE));
+}
+
+/*----------------------------------------------------------------------*/
 
 int endOfFile (void) {
   yypop_buffer_state();
@@ -245,6 +277,34 @@ int endOfFile (void) {
   return 1;
 }
 
+/*----------------------------------------------------------------------*/
+
+int endSubC (void) {
+
+  if (subBlock!=0) {
+    endSub();      // C++ part
+  }
+  else {
+    yypop_buffer_state();
+    if (!YY_CURRENT_BUFFER) {
+      printf("%sHit 'end' in main program\n%s",CYN,WHT);
+      finish();
+      exit(0);
+    }
+    returnSub();
+  }
+    
+  return 1;
+}
+
+/*----------------------------------------------------------------------*/
+
 int yywrap() {   /* maybe unneeded I think */
   return 1;
+}
+
+/*----------------------------------------------------------------------*/
+
+FILE * getyyin() {
+  return yyin;
 }

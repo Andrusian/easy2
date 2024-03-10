@@ -107,8 +107,30 @@ const char * debug_type (int dtype) {
       return "ciri";
     case TO:
       return "to";
-    case COMMA:
-      return "COMMA";
+    case FREQ2:
+      return "FREQ2";
+    case FREQ3:
+      return "FREQ3";
+    case VOL2:
+      return "VOL2";
+    case VOL3:
+      return "VOL3";
+    case RAMPS:
+      return "RAMPS";
+    case EXIT:
+      return "EXIT";
+    case TIMESTAMP:
+      return "TIMESTAMP";
+    case ASSIGNLHS:
+      return "ASSIGNLHS";
+    case SUB:
+      return "SUB";
+    case END:
+      return "END";
+    case CALL:
+      return "CALL";
+    case REQUIRE:
+      return "REQUIRE";
 
     case SH_TEASE1:
       return "tease1";
@@ -145,6 +167,14 @@ const char * debug_type (int dtype) {
     case SH_REV2:
       return "rev2";
     case SH_REV3:
+      return "rev3";
+    case SH_WEDGE1:
+      return "wedge1";
+    case SH_WEDGE2:
+      return "wedge2";
+    case SH_GAP1:
+      return "rev3";
+    case SH_GAP2:
       return "rev3";
   }
 return "Unknown";
